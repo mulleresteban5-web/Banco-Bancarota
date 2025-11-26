@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import json as js
+import re  # Agregar esta importación para usar expresiones regulares
 
 class Aplicacion(tk.Tk):
     def __init__(self):
@@ -70,20 +71,34 @@ class LoginFrame(tk.Frame):
         self.crear_widgets()
     
     def crear_widgets(self):
+        # Cargar la imagen del logo usando tk.PhotoImage
+        # Reemplaza "logo.png" con la ruta a tu imagen si es diferente
+        try:
+            self.logo_image = tk.PhotoImage(file="logoBBR (3).png")
+        except tk.TclError:
+            # Si no se encuentra la imagen, mostrar un mensaje de error y continuar sin ella
+            print("Error: No se pudo cargar la imagen 'logoBBR (3).png'. Asegúrate de que el archivo exista.")
+            self.logo_image = None
+        
+        # Etiqueta para mostrar la imagen del logo (arriba de todo)
+        if self.logo_image:
+            logo_label = tk.Label(self, image=self.logo_image, bg="#b5ddd8")
+            logo_label.pack(pady=(20, 10))  # Espaciado superior e inferior
+
         # Etiqueta y campo para nombre
-        texto_nombre = tk.Label(self, text='Nombre: ', font=('Arial', 35, 'bold'), 
+        texto_nombre = tk.Label(self, text='Nombre: ', font=('Arial', 30, 'bold'), 
                                bg='#b5ddd8', fg='white')
         texto_nombre.pack(padx=25, pady=25)
         
-        self.cuadro_texto_entrada_nombre = tk.Entry(self, width=15, font=('Arial', 35))
+        self.cuadro_texto_entrada_nombre = tk.Entry(self, width=13, font=('Arial', 20))
         self.cuadro_texto_entrada_nombre.pack(padx=25, pady=25)
         
         # Etiqueta y campo para contraseña
-        texto_contraseña = tk.Label(self, text='Contraseña: ', font=('Arial', 35, 'bold'), 
+        texto_contraseña = tk.Label(self, text='Contraseña: ', font=('Arial', 30, 'bold'), 
                                    bg='#b5ddd8', fg='white')
         texto_contraseña.pack(padx=25, pady=25)
         
-        self.cuadro_texto_entrada_contraseña = tk.Entry(self, width=15, font=('Arial', 35), show='*')
+        self.cuadro_texto_entrada_contraseña = tk.Entry(self, width=13, font=('Arial', 20), show='*')
         self.cuadro_texto_entrada_contraseña.pack(padx=25, pady=25)
         
         # Botón para ingresar
@@ -108,57 +123,60 @@ class LoginFrame(tk.Frame):
         if not nombre or not contraseña:
             messagebox.showerror("Error", "Por favor ingresa nombre y contraseña")
             return
-
+        
+             # Validar que el nombre no contenga espacios ni caracteres especiales (solo letras y números)
+        if not re.match(r'^[a-zA-Z0-9]+$', nombre):
+         messagebox.showerror("Error", "El nombre solo puede contener letras y números, sin espacios ni caracteres especiales")
+         return
+        
+        # Validar que la contraseña no contenga espacios ni caracteres especiales (solo letras y números)
+        if not re.match(r'^[a-zA-Z0-9]+$', contraseña):
+         messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
+         return
+        
         # Verificar si es gerente
         if nombre == "Gerente" and contraseña == "gerente123":
             self.controller.usuario_actual = nombre
             self.controller.tipo_usuario = "gerente"
-            
+        
             # Mostrar mensaje de éxito
             cadena_texto = f'Bienvenido Gerente: {nombre}'
             self.texto.config(text=cadena_texto)
-            
-            # Guardar datos del gerente
-            try:
-                with open("gerente.json", 'r') as archivo:
-                    datos = js.load(archivo)
-            except FileNotFoundError:
-                datos = []
-            
-            diccionario_a_guardar = {'nombre': nombre, 'contraseña': contraseña, 'tipo': 'gerente'}
-            datos.append(diccionario_a_guardar)
-
-            with open("gerente.json", 'w') as archivo1:
-                js.dump(datos, archivo1)
-
+        
+            tipo = "gerente"
         else:
             # Es un cliente
             self.controller.usuario_actual = nombre
             self.controller.tipo_usuario = "cliente"
-            
+        
             # Mostrar mensaje de éxito
             cadena_texto = f'Bienvenido Cliente: {nombre}'
             self.texto.config(text=cadena_texto)
-            
-            # Guardar datos del cliente
-            try:
-                with open("cliente.json", 'r') as archivo:
-                    datos2 = js.load(archivo)
-            except FileNotFoundError:
-                datos2 = []
-            
-            diccionario_a_guardar = {'nombre': nombre, 'contraseña': contraseña, 'tipo': 'cliente'}
-            datos2.append(diccionario_a_guardar)
+        
+            tipo = "cliente"
 
-            with open("cliente.json", 'w') as archivo2:
-                js.dump(datos2, archivo2)
+        # Guardar datos en usuarios_cuentas.json (consolidado)
+        try:
+            with open("usuarios_cuentas.json", 'r') as archivo:
+                datos = js.load(archivo)
+                # Verificar que sea una lista; si no, reinicializar
+                if not isinstance(datos, list):
+                    datos = []
+        except (FileNotFoundError, js.JSONDecodeError):
+            # Si no existe o está corrupto, iniciar con lista vacía
+            datos = []
+    
+        diccionario_a_guardar = {'nombre': nombre, 'contraseña': contraseña, 'tipo': tipo}
+        datos.append(diccionario_a_guardar)
+
+        with open("usuarios_cuentas.json", 'w') as archivo:
+            js.dump(datos, archivo)
 
         # Limpiar campos
         self.cuadro_texto_entrada_nombre.delete(0, tk.END)
         self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
-        
+    
         # Mostrar mensaje y cambiar al notebook
-        messagebox.showinfo("Éxito", "Login exitoso")
         self.controller.mostrar_frame("NotebookFrame")
 
 
@@ -250,37 +268,215 @@ class NotebookFrame(tk.Frame):
         # Pestaña 1 - Mi Cuenta
         pestana1 = ttk.Frame(self.notebook)
         self.notebook.add(pestana1, text="Mi Cuenta")
-        
+    
         ttk.Label(pestana1, text="Información Personal", font=('Arial', 14, 'bold')).pack(pady=20)
-        
-        ttk.Label(pestana1, text="Nombre:").pack(pady=5)
-        nombre_entry = ttk.Entry(pestana1, width=30)
-        nombre_entry.pack(pady=5)
-        nombre_entry.insert(0, self.controller.usuario_actual)
-        
-        ttk.Label(pestana1, text="Email:").pack(pady=5)
-        ttk.Entry(pestana1, width=30).pack(pady=5)
-        
-        ttk.Label(pestana1, text="Teléfono:").pack(pady=5)
-        ttk.Entry(pestana1, width=30).pack(pady=5)
-        
+    
+        # Treeview para mostrar cuentas (hacerlo atributo de clase para poder acceder desde otros métodos)
+        self.tree2 = ttk.Treeview(pestana1, columns=("cuenta", "N°cuenta", "saldo"))
+        self.tree2.heading("cuenta", text="Tipo de Cuenta")
+        self.tree2.heading("N°cuenta", text="N° de cuenta")
+        self.tree2.heading("saldo", text="Saldo disponible")
+
+        # Ajustar anchos de columnas
+        self.tree2.column("#0", width=50)
+        self.tree2.column("cuenta", width=100)
+        self.tree2.column("N°cuenta", width=80)
+        self.tree2.column("saldo", width=100)
+
+        # Diccionario de cuentas iniciales por usuario (agrega más usuarios aquí)
+        cuentas_por_defecto = {
+            "Juan": [
+                {"id": "1", "tipo": "Cuenta Vista", "numero": "111111111", "saldo": "$10.000"},
+                {"id": "2", "tipo": "Cuenta de Ahorros", "numero": "111111111", "saldo": "$50.000"}
+            ],
+            "Ana": [
+                {"id": "1", "tipo": "Cuenta Corriente", "numero": "222222222", "saldo": "$25.000"},
+                {"id": "2", "tipo": "Cuenta Rut", "numero": "222222222", "saldo": "$5.000"},
+                {"id": "3", "tipo": "Cuenta de Ahorros", "numero": "222222222", "saldo": "$100.000"}
+            ],
+            "Pedro": [
+                {"id": "1", "tipo": "Cuenta Vista", "numero": "333333333", "saldo": "$15.000"},
+                {"id": "2", "tipo": "Cuenta Corriente", "numero": "333333333", "saldo": "$75.000"},
+                {"id": "3", "tipo": "Cuenta Rut", "numero": "333333333", "saldo": "$20.000"},
+                {"id": "4", "tipo": "Cuenta de Ahorros", "numero": "333333333", "saldo": "$200.000"}
+            ]
+        }
+
+        # Cargar datos iniciales desde cuentas.json o usar cuentas por defecto
+        usuario = self.controller.usuario_actual  # Nombre del usuario logueado
+        try:
+            with open("cuentas.json", 'r') as archivo:
+                datos_globales = js.load(archivo)
+                # Verificar que sea un diccionario válido
+                if not isinstance(datos_globales, dict):
+                    raise ValueError("Datos inválidos en cuentas.json")
+                # Obtener cuentas del usuario actual
+                self.cuentas_data = datos_globales.get(usuario, cuentas_por_defecto.get(usuario, []))
+        except (FileNotFoundError, js.JSONDecodeError, ValueError):
+            # Si no existe o está corrupto, usar cuentas por defecto o lista genérica
+            self.cuentas_data = cuentas_por_defecto.get(usuario, [
+                {"id": "1", "tipo": "Cuenta Vista", "numero": "000000001", "saldo": "$0.000"},
+                {"id": "2", "tipo": "Cuenta de Ahorros", "numero": "000000002", "saldo": "$0.000"}
+            ])
+
+        # Llenar el treeview con los datos
+        self.actualizar_treeview()
+
+        self.tree2.pack(pady=20, fill="both", expand=True)
+    
         # Pestaña 2 - Operaciones
         pestana2 = ttk.Frame(self.notebook)
         self.notebook.add(pestana2, text="Operaciones")
-        
+    
         ttk.Label(pestana2, text="Operaciones Bancarias", font=('Arial', 14, 'bold')).pack(pady=20)
-        ttk.Button(pestana2, text="Consultar Saldo").pack(pady=10)
+    
+        # Frame para contener el botón y la lista con checkbuttons
+        frame_eliminar = ttk.Frame(pestana2)
+        frame_eliminar.pack(pady=10)
+
+        # Botón para eliminar cuenta
+        boton_eliminar = ttk.Button(frame_eliminar, text="Eliminar Cuenta", command=self.mostrar_lista_cuentas)
+        boton_eliminar.pack(pady=5)
+
+        # Frame para contener los checkbuttons (inicialmente oculto)
+        self.frame_cuentas = ttk.Frame(pestana2)
+        self.frame_cuentas.pack(pady=5, fill=tk.X, padx=20)
+        self.frame_cuentas.pack_forget()  # Ocultar inicialmente
+
+        # Variables para los checkbuttons
+        self.variables_cuentas = []
+
+        # Botón para confirmar eliminación
+        self.boton_confirmar = ttk.Button(pestana2, text="Confirmar Eliminación", command=self.eliminar_cuentas_seleccionadas)
+        self.boton_confirmar.pack(pady=5)
+        self.boton_confirmar.pack_forget()  # Ocultar inicialmente
+    
+        ttk.Button(pestana2, text="Crear cuenta").pack(pady=10)
         ttk.Button(pestana2, text="Transferencias").pack(pady=10)
-        ttk.Button(pestana2, text="Pago de Servicios").pack(pady=10)
-        
+    
         # Pestaña 3 - Ayuda
         pestana3 = ttk.Frame(self.notebook)
         self.notebook.add(pestana3, text="Ayuda")
-        
+    
         ttk.Label(pestana3, text="Centro de Ayuda - Modo Cliente", font=('Arial', 14, 'bold')).pack(pady=20)
         ttk.Label(pestana3, text=f"Bienvenido Cliente: {self.controller.usuario_actual}").pack(pady=10)
         ttk.Button(pestana3, text="Soporte al Cliente").pack(pady=10)
         ttk.Button(pestana3, text="Preguntas Frecuentes").pack(pady=10)
+
+    def actualizar_treeview(self):
+        """Actualiza el treeview con los datos actuales de cuentas"""
+        # Limpiar treeview
+        for item in self.tree2.get_children():
+            self.tree2.delete(item)
+        
+        # Insertar datos actualizados
+        for cuenta in self.cuentas_data:
+            self.tree2.insert("", "end", text=cuenta["id"], 
+                            values=(cuenta["tipo"], cuenta["numero"], cuenta["saldo"]))
+
+    def mostrar_lista_cuentas(self):
+        """Muestra u oculta la lista de cuentas con checkbuttons"""
+        if self.frame_cuentas.winfo_ismapped():
+            # Si está visible, ocultarla
+            self.frame_cuentas.pack_forget()
+            self.boton_confirmar.pack_forget()
+            self.limpiar_checkbuttons()
+        else:
+            # Si está oculta, mostrarla y crear checkbuttons
+            self.crear_checkbuttons_cuentas()
+            self.frame_cuentas.pack(pady=5, fill=tk.X, padx=20)
+            self.boton_confirmar.pack(pady=5)
+
+    def crear_checkbuttons_cuentas(self):
+        """Crea los checkbuttons para cada cuenta basándose en el treeview"""
+        # Limpiar frame existente
+        for widget in self.frame_cuentas.winfo_children():
+            widget.destroy()
+    
+        # Limpiar variables
+        self.variables_cuentas = []
+    
+        # Título
+        ttk.Label(self.frame_cuentas, text="Seleccione las cuentas a eliminar:", font=('Arial', 10, 'bold')).pack(anchor=tk.W, pady=(0, 10))
+    
+        # Crear checkbutton para cada cuenta del treeview
+        for cuenta in self.cuentas_data:
+            var = tk.BooleanVar()
+            self.variables_cuentas.append(var)
+        
+            texto_cuenta = f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}"
+        
+            check = ttk.Checkbutton(self.frame_cuentas, 
+                               text=texto_cuenta,
+                               variable=var)
+            check.pack(anchor=tk.W, pady=2)
+
+    def eliminar_cuentas_seleccionadas(self):
+        """Elimina las cuentas seleccionadas tanto de la lista como del treeview"""
+        indices_a_eliminar = []
+        cuentas_seleccionadas = []
+    
+        # Obtener índices de las cuentas seleccionadas
+        for i, var in enumerate(self.variables_cuentas):
+            if var.get():
+                indices_a_eliminar.append(i)
+                cuentas_seleccionadas.append(self.cuentas_data[i])
+    
+        if not cuentas_seleccionadas:
+            messagebox.showwarning("Advertencia", "Por favor seleccione al menos una cuenta para eliminar")
+            return
+    
+        # Mostrar confirmación
+        mensaje = "¿Está seguro que desea eliminar las siguientes cuentas?\n\n"
+        for cuenta in cuentas_seleccionadas:
+            mensaje += f"- {cuenta['tipo']} ({cuenta['numero']})\n"
+    
+        if messagebox.askyesno("Confirmar Eliminación", mensaje):
+            # Eliminar las cuentas seleccionadas (en orden inverso para evitar problemas de índices)
+            for index in sorted(indices_a_eliminar, reverse=True):
+                self.cuentas_data.pop(index)
+            
+            # Actualizar el treeview
+            self.actualizar_treeview()
+            
+            # Actualizar los checkbuttons
+            self.crear_checkbuttons_cuentas()
+            
+            messagebox.showinfo("Éxito", f"Se eliminaron {len(cuentas_seleccionadas)} cuenta(s) correctamente")
+        
+        # Guardar cambios en cuentas.json
+        self.guardar_cuentas()
+
+    def limpiar_checkbuttons(self):
+        """Limpia los checkbuttons y variables"""
+        for var in self.variables_cuentas:
+            var.set(False)
+
+    def guardar_cuentas(self):
+        """Guarda la lista de cuentas en cuentas.json para el usuario actual"""
+        usuario = self.controller.usuario_actual
+        if not usuario:
+            messagebox.showerror("Error", "Usuario no identificado. No se pueden guardar cambios.")
+            return
+        try:
+            with open("cuentas.json", 'r') as archivo:
+                datos_globales = js.load(archivo)
+            if not isinstance(datos_globales, dict):
+                datos_globales = {}
+        except (FileNotFoundError, js.JSONDecodeError):
+            datos_globales = {}
+    
+        # Actualizar las cuentas del usuario actual
+        datos_globales[usuario] = self.cuentas_data
+    
+        try:
+            with open("cuentas.json", 'w') as archivo:
+                js.dump(datos_globales, archivo)
+            # Debug: Mostrar confirmación (puedes quitar esto después de probar)
+            print(f"Cuentas guardadas para {usuario}: {self.cuentas_data}")
+            messagebox.showinfo("Guardado", f"Cambios guardados para {usuario}.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudieron guardar los cambios: {str(e)}")        
     
     def cerrar_sesion(self):
         """Volver a la pantalla de login"""
