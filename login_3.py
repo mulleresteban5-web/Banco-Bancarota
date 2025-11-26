@@ -74,10 +74,10 @@ class LoginFrame(tk.Frame):
         # Cargar la imagen del logo usando tk.PhotoImage
         # Reemplaza "logo.png" con la ruta a tu imagen si es diferente
         try:
-            self.logo_image = tk.PhotoImage(file="logoBBR (3).png")
+            self.logo_image = tk.PhotoImage(file="logoBBR(3).png")
         except tk.TclError:
             # Si no se encuentra la imagen, mostrar un mensaje de error y continuar sin ella
-            print("Error: No se pudo cargar la imagen 'logoBBR (3).png'. Asegúrate de que el archivo exista.")
+            print("Error: No se pudo cargar la imagen 'logoBBR(3).png'. Asegúrate de que el archivo exista.")
             self.logo_image = None
         
         # Etiqueta para mostrar la imagen del logo (arriba de todo)
@@ -124,28 +124,44 @@ class LoginFrame(tk.Frame):
             messagebox.showerror("Error", "Por favor ingresa nombre y contraseña")
             return
         
-             # Validar que el nombre no contenga espacios ni caracteres especiales (solo letras y números)
+        # Validar que el nombre no contenga espacios ni caracteres especiales (solo letras y números)
         if not re.match(r'^[a-zA-Z0-9]+$', nombre):
-         messagebox.showerror("Error", "El nombre solo puede contener letras y números, sin espacios ni caracteres especiales")
-         return
+            messagebox.showerror("Error", "El nombre solo puede contener letras y números, sin espacios ni caracteres especiales")
+            return
         
         # Validar que la contraseña no contenga espacios ni caracteres especiales (solo letras y números)
         if not re.match(r'^[a-zA-Z0-9]+$', contraseña):
-         messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
-         return
-        
+            messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
+            return
+    
         # Verificar si es gerente
-        if nombre == "Gerente" and contraseña == "gerente123":
-            self.controller.usuario_actual = nombre
-            self.controller.tipo_usuario = "gerente"
-        
-            # Mostrar mensaje de éxito
-            cadena_texto = f'Bienvenido Gerente: {nombre}'
-            self.texto.config(text=cadena_texto)
-        
-            tipo = "gerente"
+        if nombre == "Gerente":
+            if contraseña == "gerente123":
+                self.controller.usuario_actual = nombre
+                self.controller.tipo_usuario = "gerente"
+            
+                # Mostrar mensaje de éxito
+                cadena_texto = f'Bienvenido Gerente: {nombre}'
+                self.texto.config(text=cadena_texto)
+            
+                tipo = "gerente"
+            
+                # Limpiar campos
+                self.cuadro_texto_entrada_nombre.delete(0, tk.END)
+                self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
+            
+                # Guardar datos en usuarios_cuentas.json
+                self.guardar_usuario(nombre, contraseña, tipo)
+            
+                # Mostrar notebook
+                self.controller.mostrar_frame("NotebookFrame")
+            else:
+                # Contraseña incorrecta para Gerente
+                messagebox.showerror("Error", "Contraseña incorrecta para Gerente")
+                self.texto.config(text="")
+                return
         else:
-            # Es un cliente
+            # Es un cliente (cualquier otro nombre de usuario)
             self.controller.usuario_actual = nombre
             self.controller.tipo_usuario = "cliente"
         
@@ -154,8 +170,19 @@ class LoginFrame(tk.Frame):
             self.texto.config(text=cadena_texto)
         
             tipo = "cliente"
+        
+            # Limpiar campos
+            self.cuadro_texto_entrada_nombre.delete(0, tk.END)
+            self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
+        
+            # Guardar datos en usuarios_cuentas.json
+            self.guardar_usuario(nombre, contraseña, tipo)
+        
+            # Mostrar notebook
+            self.controller.mostrar_frame("NotebookFrame")
 
-        # Guardar datos en usuarios_cuentas.json (consolidado)
+    def guardar_usuario(self, nombre, contraseña, tipo):
+        """Función auxiliar para guardar usuario en el archivo JSON"""
         try:
             with open("usuarios_cuentas.json", 'r') as archivo:
                 datos = js.load(archivo)
@@ -165,7 +192,7 @@ class LoginFrame(tk.Frame):
         except (FileNotFoundError, js.JSONDecodeError):
             # Si no existe o está corrupto, iniciar con lista vacía
             datos = []
-    
+
         diccionario_a_guardar = {'nombre': nombre, 'contraseña': contraseña, 'tipo': tipo}
         datos.append(diccionario_a_guardar)
 
