@@ -599,6 +599,12 @@ class NotebookFrame(tk.Frame):
         # Función para confirmar creación
         def confirmar_creacion():
             tipo_seleccionado = tipo_var.get()
+
+            # Verificar si ya existe una cuenta del mismo tipo
+            for cuenta in self.cuentas_data:
+                if cuenta["tipo"] == tipo_seleccionado:
+                    messagebox.showerror("Error", f"Ya tienes una cuenta de tipo '{tipo_seleccionado}'. No puedes crear otra del mismo tipo.")
+                    return            
         
             # Generar un número de cuenta único (9 dígitos aleatorios)
             numero_cuenta = str(random.randint(100000000, 999999999))
