@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 import json as js
 import re  # Agregar esta importación para usar expresiones regulares
+import random  # Agregar esta importación para generar números de cuenta aleatorios
 
 class Aplicacion(tk.Tk):
     def __init__(self):
@@ -378,9 +379,9 @@ class NotebookFrame(tk.Frame):
         self.boton_confirmar.pack(pady=5)
         self.boton_confirmar.pack_forget()  # Ocultar inicialmente
     
-        ttk.Button(pestana2, text="Crear cuenta").pack(pady=10)
+        ttk.Button(pestana2, text="Crear cuenta", command=self.crear_cuenta).pack(pady=10)
         ttk.Button(pestana2, text="Transferencias").pack(pady=10)
-    
+
         # Pestaña 3 - Ayuda
         pestana3 = ttk.Frame(self.notebook)
         self.notebook.add(pestana3, text="Ayuda")
@@ -389,6 +390,67 @@ class NotebookFrame(tk.Frame):
         ttk.Label(pestana3, text=f"Bienvenido Cliente: {self.controller.usuario_actual}").pack(pady=10)
         ttk.Button(pestana3, text="Soporte al Cliente").pack(pady=10)
         ttk.Button(pestana3, text="Preguntas Frecuentes").pack(pady=10)
+    
+    def crear_cuenta(self):
+        """Método para crear una nueva cuenta bancaria"""
+        # Crear una ventana emergente para ingresar datos de la nueva cuenta
+        ventana_crear = tk.Toplevel(self)
+        ventana_crear.title("Crear Nueva Cuenta")
+        ventana_crear.geometry("400x300")
+        ventana_crear.configure(bg="#b5ddd8")
+    
+        # Etiqueta y OptionMenu para seleccionar tipo de cuenta
+        ttk.Label(ventana_crear, text="Seleccione el tipo de cuenta:", font=('Arial', 12, 'bold')).pack(pady=10)
+        tipos_cuenta = ["Cuenta Vista", "Cuenta de Ahorros", "Cuenta Corriente", "Cuenta Rut"]
+        tipo_var = tk.StringVar(value=tipos_cuenta[0])
+        menu_tipo = tk.OptionMenu(ventana_crear, tipo_var, *tipos_cuenta)
+        menu_tipo.pack(pady=10)
+    
+        # Función para confirmar creación
+        def confirmar_creacion():
+            tipo_seleccionado = tipo_var.get()
+        
+            # Generar un número de cuenta único (9 dígitos aleatorios)
+            numero_cuenta = str(random.randint(100000000, 999999999))
+        
+            # Verificar que el número no exista ya para este usuario
+            for cuenta in self.cuentas_data:
+                if cuenta["numero"] == numero_cuenta:
+                    numero_cuenta = str(random.randint(100000000, 999999999))  # Generar otro si choca
+        
+            # Crear nueva cuenta con saldo 0
+            nueva_cuenta = {
+                "id": str(len(self.cuentas_data) + 1),  # ID incremental
+                "tipo": tipo_seleccionado,
+                "numero": numero_cuenta,
+                "saldo": "$0"
+            }
+        
+            # Agregar a la lista de cuentas
+            self.cuentas_data.append(nueva_cuenta)
+        
+            # Actualizar el treeview
+            self.actualizar_treeview()
+        
+            # Guardar cambios en cuentas.json
+            self.guardar_cuentas()
+        
+            # Mostrar mensaje de éxito
+            messagebox.showinfo("Éxito", f"Cuenta {tipo_seleccionado} creada exitosamente.\nNúmero de cuenta: {numero_cuenta}")
+        
+            # Cerrar ventana
+            ventana_crear.destroy()
+    
+        # Botón para confirmar
+        ttk.Button(ventana_crear, text="Crear Cuenta", command=confirmar_creacion).pack(pady=20)
+    
+        # Botón para cancelar
+        ttk.Button(ventana_crear, text="Cancelar", command=ventana_crear.destroy).pack(pady=10)
+    
+        # Centrar la ventana emergente
+        ventana_crear.transient(self)
+        ventana_crear.grab_set()
+        self.wait_window(ventana_crear)
 
     def actualizar_treeview(self):
         """Actualiza el treeview con los datos actuales de cuentas"""
