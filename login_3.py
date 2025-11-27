@@ -102,10 +102,19 @@ class LoginFrame(tk.Frame):
         self.cuadro_texto_entrada_contraseña = tk.Entry(self, width=13, font=('Arial', 20), show='*')
         self.cuadro_texto_entrada_contraseña.pack(padx=25, pady=25)
         
+        # Frame para botones
+        frame_botones = tk.Frame(self, bg="#b5ddd8")
+        frame_botones.pack(pady=20)
+        
         # Botón para ingresar
-        boton_ingresar = tk.Button(self, text='Ingresar', command=self.verificar_login, 
+        boton_ingresar = tk.Button(frame_botones, text='Ingresar', command=self.verificar_login, 
                                   font=('Arial', 20, 'bold'))
-        boton_ingresar.pack(pady=20)
+        boton_ingresar.pack(side=tk.LEFT, padx=10)
+        
+        # Botón para registrarse
+        boton_registrarse = tk.Button(frame_botones, text='Registrarse', command=self.registrar_usuario, 
+                                     font=('Arial', 20, 'bold'))
+        boton_registrarse.pack(side=tk.LEFT, padx=10)
         
         # Etiqueta para mostrar mensajes
         self.texto = tk.Label(self, text='', font=('Comic Sans MS', 20), 
@@ -161,26 +170,208 @@ class LoginFrame(tk.Frame):
                 messagebox.showerror("Error", "Contraseña incorrecta para Gerente")
                 self.texto.config(text="")
                 return
+        # Verificar si es cliente específico: Ana
+        elif nombre == "Ana":
+            if contraseña == "ana123":
+                self.controller.usuario_actual = nombre
+                self.controller.tipo_usuario = "cliente"
+            
+                # Mostrar mensaje de éxito
+                cadena_texto = f'Bienvenido Cliente: {nombre}'
+                self.texto.config(text=cadena_texto)
+            
+                tipo = "cliente"
+            
+                # Limpiar campos
+                self.cuadro_texto_entrada_nombre.delete(0, tk.END)
+                self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
+            
+                # Guardar datos en usuarios_cuentas.json
+                self.guardar_usuario(nombre, contraseña, tipo)
+            
+                # Mostrar notebook
+                self.controller.mostrar_frame("NotebookFrame")
+            else:
+                # Contraseña incorrecta para Ana
+                messagebox.showerror("Error", "Contraseña incorrecta para Ana")
+                self.texto.config(text="")
+                return
+        # Verificar si es cliente específico: Pedro
+        elif nombre == "Pedro":
+            if contraseña == "pedro123":
+                self.controller.usuario_actual = nombre
+                self.controller.tipo_usuario = "cliente"
+            
+                # Mostrar mensaje de éxito
+                cadena_texto = f'Bienvenido Cliente: {nombre}'
+                self.texto.config(text=cadena_texto)
+            
+                tipo = "cliente"
+            
+                # Limpiar campos
+                self.cuadro_texto_entrada_nombre.delete(0, tk.END)
+                self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
+            
+                # Guardar datos en usuarios_cuentas.json
+                self.guardar_usuario(nombre, contraseña, tipo)
+            
+                # Mostrar notebook
+                self.controller.mostrar_frame("NotebookFrame")
+            else:
+                # Contraseña incorrecta para Pedro
+                messagebox.showerror("Error", "Contraseña incorrecta para Pedro")
+                self.texto.config(text="")
+                return
+        # Verificar si es cliente específico: Juan
+        elif nombre == "Juan":
+            if contraseña == "juan123":
+                self.controller.usuario_actual = nombre
+                self.controller.tipo_usuario = "cliente"
+            
+                # Mostrar mensaje de éxito
+                cadena_texto = f'Bienvenido Cliente: {nombre}'
+                self.texto.config(text=cadena_texto)
+            
+                tipo = "cliente"
+            
+                # Limpiar campos
+                self.cuadro_texto_entrada_nombre.delete(0, tk.END)
+                self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
+            
+                # Guardar datos en usuarios_cuentas.json
+                self.guardar_usuario(nombre, contraseña, tipo)
+            
+                # Mostrar notebook
+                self.controller.mostrar_frame("NotebookFrame")
+            else:
+                # Contraseña incorrecta para Juan
+                messagebox.showerror("Error", "Contraseña incorrecta para Juan")
+                self.texto.config(text="")
+                return
         else:
-            # Es un cliente (cualquier otro nombre de usuario)
-            self.controller.usuario_actual = nombre
-            self.controller.tipo_usuario = "cliente"
+            # Verificar si es un usuario registrado en el JSON
+            try:
+                with open("usuarios_cuentas.json", 'r') as archivo:
+                    datos = js.load(archivo)
+                    if not isinstance(datos, list):
+                        datos = []
+            except (FileNotFoundError, js.JSONDecodeError):
+                datos = []
+            
+            usuario_encontrado = False
+            for usuario in datos:
+                if usuario['nombre'] == nombre and usuario['contraseña'] == contraseña:
+                    usuario_encontrado = True
+                    break
+            
+            if usuario_encontrado:
+                self.controller.usuario_actual = nombre
+                self.controller.tipo_usuario = "cliente"
+            
+                # Mostrar mensaje de éxito
+                cadena_texto = f'Bienvenido Cliente: {nombre}'
+                self.texto.config(text=cadena_texto)
+            
+                tipo = "cliente"
         
-            # Mostrar mensaje de éxito
-            cadena_texto = f'Bienvenido Cliente: {nombre}'
-            self.texto.config(text=cadena_texto)
+                # Limpiar campos
+                self.cuadro_texto_entrada_nombre.delete(0, tk.END)
+                self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
+            
+                # Guardar datos en usuarios_cuentas.json (aunque ya existe, se reescribe)
+                self.guardar_usuario(nombre, contraseña, tipo)
+            
+                # Mostrar notebook
+                self.controller.mostrar_frame("NotebookFrame")
+            else:
+                # Usuario no registrado
+                messagebox.showerror("Error", "Usuario no registrado. Por favor regístrese primero.")
+                self.texto.config(text="")
+                return
+    def registrar_usuario(self):
+        """Función para registrar un nuevo usuario"""
+        # Crear ventana emergente para registro
+        ventana_registro = tk.Toplevel(self)
+        ventana_registro.title("Registro de Usuario")
+        ventana_registro.geometry("400x300")
+        ventana_registro.configure(bg="#b5ddd8")
         
-            tipo = "cliente"
+        # Etiqueta y campo para nombre
+        ttk.Label(ventana_registro, text="Nombre de usuario:", font=('Arial', 14, 'bold')).pack(pady=10)
+        entrada_nombre = ttk.Entry(ventana_registro, width=20, font=('Arial', 12))
+        entrada_nombre.pack(pady=5)
         
-            # Limpiar campos
-            self.cuadro_texto_entrada_nombre.delete(0, tk.END)
-            self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
+        # Etiqueta y campo para contraseña
+        ttk.Label(ventana_registro, text="Contraseña:", font=('Arial', 14, 'bold')).pack(pady=10)
+        entrada_contraseña = ttk.Entry(ventana_registro, width=20, font=('Arial', 12), show='*')
+        entrada_contraseña.pack(pady=5)
         
-            # Guardar datos en usuarios_cuentas.json
-            self.guardar_usuario(nombre, contraseña, tipo)
+        def confirmar_registro():
+            nombre = entrada_nombre.get().strip()
+            contraseña = entrada_contraseña.get().strip()
+            
+            # Validar campos
+            if not nombre or not contraseña:
+                messagebox.showerror("Error", "Por favor ingresa nombre y contraseña")
+                return
+
+            # Validar formato
+            if not re.match(r'^[a-zA-Z0-9]+$', nombre):
+                messagebox.showerror("Error", "El nombre solo puede contener letras y números, sin espacios ni caracteres especiales")
+                return
+            if not re.match(r'^[a-zA-Z0-9]+$', contraseña):
+                messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
+                return
+            
+            # Verificar unicidad
+            try:
+                with open("usuarios_cuentas.json", 'r') as archivo:
+                    datos = js.load(archivo)
+                    if not isinstance(datos, list):
+                        datos = []
+            except (FileNotFoundError, js.JSONDecodeError):
+                datos = []
+            
+            for usuario in datos:
+                if usuario['nombre'] == nombre:
+                    messagebox.showerror("Error", "El nombre de usuario ya existe. Elige otro.")
+                    return
+            # Verificar contra usuarios predefinidos
+            usuarios_predefinidos = ["Gerente", "Ana", "Pedro", "Juan"]
+            if nombre in usuarios_predefinidos:
+                messagebox.showerror("Error", "El nombre de usuario ya existe. Elige otro.")
+                return
+            
+            # Guardar nuevo usuario
+            diccionario_a_guardar = {'nombre': nombre, 'contraseña': contraseña, 'tipo': 'cliente'}
+            datos.append(diccionario_a_guardar)
+            with open("usuarios_cuentas.json", 'w') as archivo:
+                js.dump(datos, archivo)
+            
+            # Crear entrada vacía en cuentas.json para el nuevo usuario
+            try:
+                with open("cuentas.json", 'r') as archivo:
+                    cuentas_globales = js.load(archivo)
+                    if not isinstance(cuentas_globales, dict):
+                        cuentas_globales = {}
+            except (FileNotFoundError, js.JSONDecodeError):
+                cuentas_globales = {}
+            
+            cuentas_globales[nombre] = []  # Lista vacía de cuentas
+            with open("cuentas.json", 'w') as archivo:
+                js.dump(cuentas_globales, archivo)
+
+            messagebox.showinfo("Éxito", f"Usuario {nombre} registrado exitosamente. Ahora puedes iniciar sesión.")
+            ventana_registro.destroy()
         
-            # Mostrar notebook
-            self.controller.mostrar_frame("NotebookFrame")
+        # Botones
+        ttk.Button(ventana_registro, text="Registrar", command=confirmar_registro).pack(pady=20)
+        ttk.Button(ventana_registro, text="Cancelar", command=ventana_registro.destroy).pack(pady=5)
+        
+        # Centrar ventana emergente
+        ventana_registro.transient(self)
+        ventana_registro.grab_set()
+        self.wait_window(ventana_registro)
 
     def guardar_usuario(self, nombre, contraseña, tipo):
         """Función auxiliar para guardar usuario en el archivo JSON"""
@@ -206,7 +397,6 @@ class LoginFrame(tk.Frame):
     
         # Mostrar mensaje y cambiar al notebook
         self.controller.mostrar_frame("NotebookFrame")
-
 
 class NotebookFrame(tk.Frame):
     def __init__(self, parent, controller):
