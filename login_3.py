@@ -570,7 +570,7 @@ class NotebookFrame(tk.Frame):
         self.boton_confirmar.pack_forget()  # Ocultar inicialmente
     
         ttk.Button(pestana2, text="Crear cuenta", command=self.crear_cuenta).pack(pady=10)
-        ttk.Button(pestana2, text="Transferencias").pack(pady=10)
+        ttk.Button(pestana2, text="Transferencias", command=self.realizar_transferencia).pack(pady=10)
 
         # Pestaña 3 - Ayuda
         pestana3 = ttk.Frame(self.notebook)
@@ -730,6 +730,169 @@ class NotebookFrame(tk.Frame):
         """Limpia los checkbuttons y variables"""
         for var in self.variables_cuentas:
             var.set(False)
+
+    def realizar_transferencia(self):
+        """Función para realizar una transferencia entre cuentas de usuarios registrados"""
+        # Crear ventana emergente para transferencia
+        ventana_transferencia = tk.Toplevel(self)
+        ventana_transferencia.title("Realizar Transferencia")
+        ventana_transferencia.geometry("500x400")
+        ventana_transferencia.configure(bg="#b5ddd8")
+
+        # Etiqueta y OptionMenu para seleccionar cuenta de origen
+        ttk.Label(ventana_transferencia, text="Seleccione la cuenta de origen:", font=('Arial', 12, 'bold')).pack(pady=10)
+        cuentas_origen = [f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}" for cuenta in self.cuentas_data]
+        if not cuentas_origen:
+            messagebox.showerror("Error", "No tienes cuentas disponibles para transferir.")
+            ventana_transferencia.destroy()
+            return
+        origen_var = tk.StringVar(value=cuentas_origen[0])
+        menu_origen = tk.OptionMenu(ventana_transferencia, origen_var, *cuentas_origen)
+        menu_origen.pack(pady=10)
+
+        # Etiqueta y campo para nombre del destinatario
+        ttk.Label(ventana_transferencia, text="Nombre del destinatario:", font=('Arial', 12, 'bold')).pack(pady=10)
+        entrada_destinatario = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
+        entrada_destinatario.pack(pady=5)
+
+        # Etiqueta y campo para monto
+        ttk.Label(ventana_transferencia, text="Monto a transferir (ej: 1000):", font=('Arial', 12, 'bold')).pack(pady=10)
+        entrada_monto = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
+        entrada_monto.pack(pady=5)
+
+        # Variable para cuenta de destino (se llenará después de validar destinatario)
+        destino_var = tk.StringVar()
+        menu_destino = tk.OptionMenu(ventana_transferencia, destino_var, "")
+        menu_destino.pack(pady=10)
+        menu_destino.pack_forget()  # Ocultar inicialmente
+
+        def validar_destinatario():
+            destinatario = entrada_destinatario.get().strip()
+            if not destinatario:
+                messagebox.showerror("Error", "Ingresa el nombre del destinatario.")
+                return
+
+            # Verificar si el destinatario está registrado (en usuarios_cuentas.json)
+            try:
+                with open("usuarios_cuentas.json", 'r') as archivo:
+                    datos_usuarios = js.load(archivo)
+                    if not isinstance(datos_usuarios, list):
+                        datos_usuarios = []
+            except (FileNotFoundError, js.JSONDecodeError):
+                datos_usuarios = []
+
+            usuario_encontrado = any(u['nombre'] == destinatario for u in datos_usuarios)
+            if not usuario_encontrado:
+                messagebox.showerror("Error", "Usuario no registrado.")
+                return
+
+            # Cargar cuentas del destinatario
+            try:
+                with open("cuentas.json", 'r') as archivo:
+                    datos_cuentas = js.load(archivo)
+                    if not isinstance(datos_cuentas, dict):
+                        datos_cuentas = {}
+            except (FileNotFoundError, js.JSONDecodeError):
+                datos_cuentas = {}
+
+            cuentas_destino = datos_cuentas.get(destinatario, [])
+            if not cuentas_destino:
+                messagebox.showerror("Error", "El destinatario no tiene cuentas disponibles.")
+                return
+
+            # Mostrar OptionMenu para cuenta de destino
+            opciones_destino = [f"{cuenta['tipo']} - {cuenta['numero']}" for cuenta in cuentas_destino]
+            menu_destino['menu'].delete(0, 'end')
+            for opcion in opciones_destino:
+                menu_destino['menu'].add_command(label=opcion, command=tk._setit(destino_var, opcion))
+            destino_var.set(opciones_destino[0])
+            menu_destino.pack(pady=10)
+
+        # Botón para validar destinatario
+        ttk.Button(ventana_transferencia, text="Validar Destinatario", command=validar_destinatario).pack(pady=10)
+
+        def confirmar_transferencia():
+            # Obtener datos
+            origen_seleccionado = origen_var.get()
+            destinatario = entrada_destinatario.get().strip()
+            monto_str = entrada_monto.get().strip()
+            destino_seleccionado = destino_var.get()
+
+            # Validar monto
+            try:
+                monto = float(monto_str)
+                if monto <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", "Ingresa un monto válido mayor a 0.")
+                return
+
+            # Encontrar cuenta de origen
+            cuenta_origen = None
+            for cuenta in self.cuentas_data:
+                if f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}" == origen_seleccionado:
+                    cuenta_origen = cuenta
+                    break
+            if not cuenta_origen:
+                messagebox.showerror("Error", "Cuenta de origen no encontrada.")
+                return
+
+            # Verificar saldo suficiente
+            saldo_origen = float(cuenta_origen['saldo'].replace('$', '').replace('.', '').replace(',', ''))
+            if monto > saldo_origen:
+                messagebox.showerror("Error", "Saldo insuficiente en la cuenta de origen.")
+                return
+
+            # Cargar cuentas del destinatario
+            try:
+                with open("cuentas.json", 'r') as archivo:
+                    datos_cuentas = js.load(archivo)
+                    if not isinstance(datos_cuentas, dict):
+                        datos_cuentas = {}
+            except (FileNotFoundError, js.JSONDecodeError):
+                datos_cuentas = {}
+
+            cuentas_destino = datos_cuentas.get(destinatario, [])
+            cuenta_destino = None
+            for cuenta in cuentas_destino:
+                if f"{cuenta['tipo']} - {cuenta['numero']}" == destino_seleccionado:
+                    cuenta_destino = cuenta
+                    break
+            if not cuenta_destino:
+                messagebox.showerror("Error", "Cuenta de destino no encontrada.")
+                return
+
+            # Realizar transferencia
+            nuevo_saldo_origen = saldo_origen - monto
+            saldo_destino = float(cuenta_destino['saldo'].replace('$', '').replace('.', '').replace(',', ''))
+            nuevo_saldo_destino = saldo_destino + monto
+
+            # Actualizar saldos
+            cuenta_origen['saldo'] = f"${nuevo_saldo_origen:,.0f}"
+            cuenta_destino['saldo'] = f"${nuevo_saldo_destino:,.0f}"
+
+            # Guardar cambios
+            datos_cuentas[self.controller.usuario_actual] = self.cuentas_data
+            datos_cuentas[destinatario] = cuentas_destino
+            with open("cuentas.json", 'w') as archivo:
+                js.dump(datos_cuentas, archivo)
+
+            # Actualizar treeview
+            self.actualizar_treeview()
+
+            messagebox.showinfo("Éxito", f"Transferencia de ${monto:,.0f} realizada exitosamente a {destinatario}.")
+            ventana_transferencia.destroy()
+
+        # Botón para confirmar
+        ttk.Button(ventana_transferencia, text="Confirmar Transferencia", command=confirmar_transferencia).pack(pady=20)
+
+        # Botón para cancelar
+        ttk.Button(ventana_transferencia, text="Cancelar", command=ventana_transferencia.destroy).pack(pady=5)
+
+        # Centrar ventana emergente
+        ventana_transferencia.transient(self)
+        ventana_transferencia.grab_set()
+        self.wait_window(ventana_transferencia)
 
     def guardar_cuentas(self):
         """Guarda la lista de cuentas en cuentas.json para el usuario actual"""
