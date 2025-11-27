@@ -150,10 +150,6 @@ class LoginFrame(tk.Frame):
                 self.controller.usuario_actual = nombre
                 self.controller.tipo_usuario = "gerente"
             
-                # Mostrar mensaje de éxito
-                cadena_texto = f'Bienvenido Gerente: {nombre}'
-                self.texto.config(text=cadena_texto)
-            
                 tipo = "gerente"
             
                 # Limpiar campos
@@ -179,10 +175,6 @@ class LoginFrame(tk.Frame):
                 self.controller.usuario_actual = nombre
                 self.controller.tipo_usuario = "cliente"
             
-                # Mostrar mensaje de éxito
-                cadena_texto = f'Bienvenido Cliente: {nombre}'
-                self.texto.config(text=cadena_texto)
-            
                 tipo = "cliente"
             
                 # Limpiar campos
@@ -205,10 +197,6 @@ class LoginFrame(tk.Frame):
                 self.controller.usuario_actual = nombre
                 self.controller.tipo_usuario = "cliente"
             
-                # Mostrar mensaje de éxito
-                cadena_texto = f'Bienvenido Cliente: {nombre}'
-                self.texto.config(text=cadena_texto)
-            
                 tipo = "cliente"
             
                 # Limpiar campos
@@ -230,10 +218,6 @@ class LoginFrame(tk.Frame):
             if contraseña == "juan123":
                 self.controller.usuario_actual = nombre
                 self.controller.tipo_usuario = "cliente"
-            
-                # Mostrar mensaje de éxito
-                cadena_texto = f'Bienvenido Cliente: {nombre}'
-                self.texto.config(text=cadena_texto)
             
                 tipo = "cliente"
             
@@ -270,10 +254,6 @@ class LoginFrame(tk.Frame):
             if usuario_encontrado:
                 self.controller.usuario_actual = nombre
                 self.controller.tipo_usuario = "cliente"
-            
-                # Mostrar mensaje de éxito
-                cadena_texto = f'Bienvenido Cliente: {nombre}'
-                self.texto.config(text=cadena_texto)
             
                 tipo = "cliente"
         
