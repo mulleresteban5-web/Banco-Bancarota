@@ -162,6 +162,9 @@ class LoginFrame(tk.Frame):
             
                 # Guardar datos en usuarios_cuentas.json
                 self.guardar_usuario(nombre, contraseña, tipo)
+
+                # Limpiar el mensaje de bienvenido antes de cambiar al notebook
+                self.texto.config(text="")  # <-- LÍNEA NUEVA: Borra el mensaje
             
                 # Mostrar notebook
                 self.controller.mostrar_frame("NotebookFrame")
