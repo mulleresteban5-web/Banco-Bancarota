@@ -850,6 +850,11 @@ class NotebookFrame(tk.Frame):
             if not cuenta_destino:
                 messagebox.showerror("Error", "Cuenta de destino no encontrada.")
                 return
+            
+            # [NUEVO] Verificar que la cuenta de origen no sea la misma que la de destino
+            if cuenta_origen['numero'] == cuenta_destino['numero']:
+               messagebox.showerror("Error", "No puedes transferir dinero a la misma cuenta.")
+               return
 
             # Realizar transferencia
             nuevo_saldo_origen = saldo_origen - monto
