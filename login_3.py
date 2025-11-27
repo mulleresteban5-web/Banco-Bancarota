@@ -924,8 +924,11 @@ class NotebookFrame(tk.Frame):
         """Volver a la pantalla de login"""
         self.controller.usuario_actual = None
         self.controller.tipo_usuario = None
+        # Destruir el NotebookFrame para forzar recreación en el próximo login
+        if "NotebookFrame" in self.controller.frames:
+            self.controller.frames["NotebookFrame"].destroy()
+            del self.controller.frames["NotebookFrame"]
         self.controller.mostrar_frame("LoginFrame")
-
 
 # Ejecutar la aplicación
 if __name__ == "__main__":
