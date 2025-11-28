@@ -739,6 +739,14 @@ class NotebookFrame(tk.Frame):
         menu_origen = tk.OptionMenu(ventana_transferencia, origen_var, *cuentas_origen)
         menu_origen.pack(pady=10)
 
+        # Etiqueta y Combobox para seleccionar tipo de cuenta de destino (antes del destinatario)
+        ttk.Label(ventana_transferencia, text="Seleccione el tipo de cuenta de destino:", font=('Arial', 12, 'bold')).pack(pady=10)
+        tipos_cuenta = ["Cuenta Vista", "Cuenta de Ahorros", "Cuenta Corriente", "Cuenta Rut"]
+        tipo_destino_var = tk.StringVar()
+        combobox_tipo = ttk.Combobox(ventana_transferencia, textvariable=tipo_destino_var, values=tipos_cuenta, state="readonly")
+        combobox_tipo.pack(pady=10)
+        combobox_tipo.set(tipos_cuenta[0])  # Valor por defecto
+
         # Etiqueta y campo para nombre del destinatario
         ttk.Label(ventana_transferencia, text="Nombre del destinatario:", font=('Arial', 12, 'bold')).pack(pady=10)
         entrada_destinatario = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
@@ -749,19 +757,21 @@ class NotebookFrame(tk.Frame):
         entrada_monto = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
         entrada_monto.pack(pady=5)
 
-        # Variable para cuenta de destino (se llenará después de validar destinatario)
-        destino_var = tk.StringVar()
-        menu_destino = tk.OptionMenu(ventana_transferencia, destino_var, "")
-        menu_destino.pack(pady=10)
-        menu_destino.pack_forget()  # Ocultar inicialmente
-
-        def validar_destinatario():
+        def confirmar_transferencia():
+            # Obtener datos
+            origen_seleccionado = origen_var.get()
+            tipo_destino = tipo_destino_var.get()
             destinatario = entrada_destinatario.get().strip()
+            monto_str = entrada_monto.get().strip()
+            # Validar que se haya seleccionado tipo
+            if not tipo_destino:
+                messagebox.showerror("Error", "Selecciona un tipo de cuenta de destino.")
+                return
+            # Validar destinatario
             if not destinatario:
                 messagebox.showerror("Error", "Ingresa el nombre del destinatario.")
                 return
-
-            # Verificar si el destinatario está registrado (en usuarios_cuentas.json)
+            # Verificar si el destinatario está registrado
             try:
                 with open("usuarios_cuentas.json", 'r') as archivo:
                     datos_usuarios = js.load(archivo)
@@ -769,12 +779,11 @@ class NotebookFrame(tk.Frame):
                         datos_usuarios = []
             except (FileNotFoundError, js.JSONDecodeError):
                 datos_usuarios = []
-
+            
             usuario_encontrado = any(u['nombre'] == destinatario for u in datos_usuarios)
             if not usuario_encontrado:
                 messagebox.showerror("Error", "Usuario no registrado.")
                 return
-
             # Cargar cuentas del destinatario
             try:
                 with open("cuentas.json", 'r') as archivo:
@@ -783,37 +792,26 @@ class NotebookFrame(tk.Frame):
                         datos_cuentas = {}
             except (FileNotFoundError, js.JSONDecodeError):
                 datos_cuentas = {}
-
             cuentas_destino = datos_cuentas.get(destinatario, [])
             if not cuentas_destino:
                 messagebox.showerror("Error", "El destinatario no tiene cuentas disponibles.")
                 return
-
-            # Mostrar OptionMenu para cuenta de destino
-            opciones_destino = [f"{cuenta['tipo']} - {cuenta['numero']}" for cuenta in cuentas_destino]
-            menu_destino['menu'].delete(0, 'end')
-            for opcion in opciones_destino:
-                menu_destino['menu'].add_command(label=opcion, command=tk._setit(destino_var, opcion))
-            destino_var.set(opciones_destino[0])
-            menu_destino.pack(pady=10)
-
-        # Botón para validar destinatario
-        ttk.Button(ventana_transferencia, text="Validar Destinatario", command=validar_destinatario).pack(pady=10)
-
-        def confirmar_transferencia():
-            # Obtener datos
-            origen_seleccionado = origen_var.get()
-            destinatario = entrada_destinatario.get().strip()
-            monto_str = entrada_monto.get().strip()
-            destino_seleccionado = destino_var.get()
+            # Verificar que el destinatario tenga al menos una cuenta del tipo seleccionado
+            cuentas_filtradas = [cuenta for cuenta in cuentas_destino if cuenta['tipo'] == tipo_destino]
+            if not cuentas_filtradas:
+                messagebox.showerror("Error", f"El destinatario no tiene una cuenta de tipo '{tipo_destino}'.")
+                return
+            
+            # Usar la primera cuenta del tipo seleccionado (no selección específica)
+            cuenta_destino = cuentas_filtradas[0]
 
             # Validar monto
             try:
                 monto = float(monto_str)
-                if monto <= 0:
+                if monto <= 1:
                     raise ValueError
             except ValueError:
-                messagebox.showerror("Error", "Ingresa un monto válido mayor a 0.")
+                messagebox.showerror("Error", "Ingresa un monto mayor a 1.")
                 return
 
             # Encontrar cuenta de origen
@@ -832,26 +830,7 @@ class NotebookFrame(tk.Frame):
                 messagebox.showerror("Error", "Saldo insuficiente en la cuenta de origen.")
                 return
 
-            # Cargar cuentas del destinatario
-            try:
-                with open("cuentas.json", 'r') as archivo:
-                    datos_cuentas = js.load(archivo)
-                    if not isinstance(datos_cuentas, dict):
-                        datos_cuentas = {}
-            except (FileNotFoundError, js.JSONDecodeError):
-                datos_cuentas = {}
-
-            cuentas_destino = datos_cuentas.get(destinatario, [])
-            cuenta_destino = None
-            for cuenta in cuentas_destino:
-                if f"{cuenta['tipo']} - {cuenta['numero']}" == destino_seleccionado:
-                    cuenta_destino = cuenta
-                    break
-            if not cuenta_destino:
-                messagebox.showerror("Error", "Cuenta de destino no encontrada.")
-                return
-            
-            # [NUEVO] Verificar que la cuenta de origen no sea la misma que la de destino
+            # Verificar que la cuenta de origen no sea la misma que la de destino
             if cuenta_origen['numero'] == cuenta_destino['numero']:
                messagebox.showerror("Error", "No puedes transferir dinero a la misma cuenta.")
                return
@@ -862,8 +841,8 @@ class NotebookFrame(tk.Frame):
             nuevo_saldo_destino = saldo_destino + monto
 
             # Actualizar saldos
-            cuenta_origen['saldo'] = f"${nuevo_saldo_origen:,.0f}"
-            cuenta_destino['saldo'] = f"${nuevo_saldo_destino:,.0f}"
+            cuenta_origen['saldo'] = f"${nuevo_saldo_origen:,.0f}".replace(',', '.')
+            cuenta_destino['saldo'] = f"${nuevo_saldo_destino:,.0f}".replace(',', '.')
 
             # Guardar cambios
             datos_cuentas[self.controller.usuario_actual] = self.cuentas_data
@@ -908,7 +887,7 @@ class NotebookFrame(tk.Frame):
         try:
             with open("cuentas.json", 'w') as archivo:
                 js.dump(datos_globales, archivo)
-            # Debug: Mostrar confirmación (puedes quitar esto después de probar)
+
             print(f"Cuentas guardadas para {usuario}: {self.cuentas_data}")
             messagebox.showinfo("Guardado", f"Cambios guardados para {usuario}.")
         except Exception as e:
