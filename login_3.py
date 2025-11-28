@@ -693,6 +693,33 @@ class NotebookFrame(tk.Frame):
         if not cuentas_seleccionadas:
             messagebox.showwarning("Advertencia", "Por favor seleccione al menos una cuenta para eliminar")
             return
+        
+                # Verificar si hay más de una cuenta en total
+        if len(self.cuentas_data) <= 1:
+            messagebox.showerror("Error", "No puedes eliminar tu única cuenta. Debes tener al menos una cuenta activa.")
+            return
+    
+        # Para cada cuenta seleccionada, manejar la transferencia de saldo si es necesario
+        for cuenta in cuentas_seleccionadas:
+            saldo = float(cuenta['saldo'].replace('$', '').replace('.', '').replace(',', ''))
+            if saldo > 0:
+                # Obtener cuentas disponibles para transferir (excluyendo las seleccionadas para eliminar)
+                cuentas_disponibles = [c for c in self.cuentas_data if c not in cuentas_seleccionadas]
+                if not cuentas_disponibles:
+                    messagebox.showerror("Error", f"No hay cuentas disponibles para transferir el saldo de {cuenta['tipo']} ({cuenta['numero']}). Cancela la eliminación de otras cuentas primero.")
+                    return
+    
+                # Mostrar diálogo para elegir cuenta destino
+                destino_elegido = self.elegir_cuenta_destino(cuentas_disponibles, cuenta)
+                if not destino_elegido:
+                    # Usuario canceló
+                    return
+    
+                # Transferir saldo completo a la cuenta elegida
+                saldo_destino = float(destino_elegido['saldo'].replace('$', '').replace('.', '').replace(',', ''))
+                nuevo_saldo_destino = saldo_destino + saldo
+                destino_elegido['saldo'] = f"${nuevo_saldo_destino:,.0f}".replace(',', '.')
+                cuenta['saldo'] = "$0"  # Dejar saldo en 0 antes de eliminar
     
         # Mostrar confirmación
         mensaje = "¿Está seguro que desea eliminar las siguientes cuentas?\n\n"
@@ -715,6 +742,41 @@ class NotebookFrame(tk.Frame):
         # Guardar cambios en cuentas.json
         self.guardar_cuentas()
 
+    def elegir_cuenta_destino(self, cuentas_disponibles, cuenta_origen):
+        """Diálogo para elegir cuenta destino para transferir saldo"""
+        ventana_destino = tk.Toplevel(self)
+        ventana_destino.title("Elegir Cuenta Destino")
+        ventana_destino.geometry("400x200")
+        ventana_destino.configure(bg="#b5ddd8")
+    
+        ttk.Label(ventana_destino, text=f"Transferir saldo de {cuenta_origen['tipo']} ({cuenta_origen['numero']}) a:", font=('Arial', 12, 'bold')).pack(pady=10)
+    
+        opciones = [f"{c['tipo']} - {c['numero']} - Saldo: {c['saldo']}" for c in cuentas_disponibles]
+        destino_var = tk.StringVar(value=opciones[0] if opciones else "")
+        menu_destino = tk.OptionMenu(ventana_destino, destino_var, *opciones)
+        menu_destino.pack(pady=10)
+    
+        cuenta_elegida = None
+    
+        def confirmar():
+            nonlocal cuenta_elegida
+            seleccion = destino_var.get()
+            for c in cuentas_disponibles:
+                if f"{c['tipo']} - {c['numero']} - Saldo: {c['saldo']}" == seleccion:
+                    cuenta_elegida = c
+                    break
+            ventana_destino.destroy()
+
+        ttk.Button(ventana_destino, text="Confirmar", command=confirmar).pack(pady=10)
+        ttk.Button(ventana_destino, text="Cancelar", command=ventana_destino.destroy).pack(pady=5)
+    
+        # Centrar y esperar
+        ventana_destino.transient(self)
+        ventana_destino.grab_set()
+        self.wait_window(ventana_destino)
+    
+        return cuenta_elegida
+
     def limpiar_checkbuttons(self):
         """Limpia los checkbuttons y variables"""
         for var in self.variables_cuentas:
@@ -729,7 +791,8 @@ class NotebookFrame(tk.Frame):
         ventana_transferencia.configure(bg="#b5ddd8")
 
         # Etiqueta y OptionMenu para seleccionar cuenta de origen
-        ttk.Label(ventana_transferencia, text="Seleccione la cuenta de origen:", font=('Arial', 12, 'bold')).pack(pady=10)
+        etiqueta_origen = ttk.Label(ventana_transferencia, text="Seleccione la cuenta de origen:", font=('Arial', 12, 'bold'))
+        etiqueta_origen.pack(pady=10)
         cuentas_origen = [f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}" for cuenta in self.cuentas_data]
         if not cuentas_origen:
             messagebox.showerror("Error", "No tienes cuentas disponibles para transferir.")
@@ -740,7 +803,8 @@ class NotebookFrame(tk.Frame):
         menu_origen.pack(pady=10)
 
         # Etiqueta y Combobox para seleccionar tipo de cuenta de destino (antes del destinatario)
-        ttk.Label(ventana_transferencia, text="Seleccione el tipo de cuenta de destino:", font=('Arial', 12, 'bold')).pack(pady=10)
+        etiqueta_tipo = ttk.Label(ventana_transferencia, text="Seleccione el tipo de cuenta de destino:", font=('Arial', 12, 'bold'))
+        etiqueta_tipo.pack(pady=10)
         tipos_cuenta = ["Cuenta Vista", "Cuenta de Ahorros", "Cuenta Corriente", "Cuenta Rut"]
         tipo_destino_var = tk.StringVar()
         combobox_tipo = ttk.Combobox(ventana_transferencia, textvariable=tipo_destino_var, values=tipos_cuenta, state="readonly")
@@ -748,14 +812,25 @@ class NotebookFrame(tk.Frame):
         combobox_tipo.set(tipos_cuenta[0])  # Valor por defecto
 
         # Etiqueta y campo para nombre del destinatario
-        ttk.Label(ventana_transferencia, text="Nombre del destinatario:", font=('Arial', 12, 'bold')).pack(pady=10)
+        etiqueta_destinatario = ttk.Label(ventana_transferencia, text="Nombre del destinatario:", font=('Arial', 12, 'bold'))
+        etiqueta_destinatario.pack(pady=10)
         entrada_destinatario = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
         entrada_destinatario.pack(pady=5)
 
         # Etiqueta y campo para monto
-        ttk.Label(ventana_transferencia, text="Monto a transferir (ej: 1000):", font=('Arial', 12, 'bold')).pack(pady=10)
+        etiqueta_monto = ttk.Label(ventana_transferencia, text="Monto a transferir (ej: 1000):", font=('Arial', 12, 'bold'))
+        etiqueta_monto.pack(pady=10)
         entrada_monto = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
         entrada_monto.pack(pady=5)
+
+        # Elementos para validación de contraseña (inicialmente ocultos)
+        etiqueta_contraseña = ttk.Label(ventana_transferencia, text="Por favor ingrese su contraseña de usuario:", font=('Arial', 12, 'bold'))
+        etiqueta_contraseña.pack_forget()
+        entrada_contraseña = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12), show='*')
+        entrada_contraseña.pack_forget()
+        
+        # Variables para almacenar datos validados (se usan después de la contraseña)
+        datos_validos = {}
 
         def confirmar_transferencia():
             # Obtener datos
@@ -808,10 +883,10 @@ class NotebookFrame(tk.Frame):
             # Validar monto
             try:
                 monto = float(monto_str)
-                if monto <= 1:
+                if monto < 1:
                     raise ValueError
             except ValueError:
-                messagebox.showerror("Error", "Ingresa un monto mayor a 1.")
+                messagebox.showerror("Error", "Ingrese un monto mayor o igual a 1.")
                 return
 
             # Encontrar cuenta de origen
@@ -834,6 +909,82 @@ class NotebookFrame(tk.Frame):
             if cuenta_origen['numero'] == cuenta_destino['numero']:
                messagebox.showerror("Error", "No puedes transferir dinero a la misma cuenta.")
                return
+            
+            # Almacenar datos validados para usar después de la contraseña
+            datos_validos.update({
+                'cuenta_origen': cuenta_origen,
+                'cuenta_destino': cuenta_destino,
+                'monto': monto,
+                'saldo_origen': saldo_origen,
+                'destinatario': destinatario,
+                'tipo_destino': tipo_destino,
+                'datos_cuentas': datos_cuentas,
+                'cuentas_destino': cuentas_destino
+            })
+
+            # Ocultar elementos anteriores y mostrar campo de contraseña
+            etiqueta_origen.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de origen
+            menu_origen.pack_forget()
+            etiqueta_tipo.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de tipo
+            combobox_tipo.pack_forget()
+            etiqueta_destinatario.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de destinatario
+            entrada_destinatario.pack_forget()
+            etiqueta_monto.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de monto
+            entrada_monto.pack_forget()
+            etiqueta_contraseña.pack(pady=10)
+            entrada_contraseña.pack(pady=5)
+
+            # Cambiar el botón a "Validar Contraseña"
+            boton_confirmar.config(text="Validar Contraseña", command=validar_contraseña)
+
+        def validar_contraseña():
+            contraseña_ingresada = entrada_contraseña.get().strip()
+            if not contraseña_ingresada:
+                messagebox.showerror("Error", "Ingresa tu contraseña.")
+                return
+            
+            usuario_actual = self.controller.usuario_actual
+            print(f"Usuario actual: {usuario_actual}")  # Debug
+            print(f"Contraseña ingresada: {contraseña_ingresada}")  # Debug
+            
+            # Validar contraseña igual que en login: primero usuarios predefinidos, luego JSON
+            contraseña_correcta = None
+            if usuario_actual == "Gerente" and contraseña_ingresada == "gerente123":
+                contraseña_correcta = "gerente123"
+            elif usuario_actual == "Ana" and contraseña_ingresada == "ana123":
+                contraseña_correcta = "ana123"
+            elif usuario_actual == "Pedro" and contraseña_ingresada == "pedro123":
+                contraseña_correcta = "pedro123"
+            elif usuario_actual == "Juan" and contraseña_ingresada == "juan123":
+                contraseña_correcta = "juan123"
+            else:
+                # Para usuarios registrados nuevos, buscar en usuarios_cuentas.json
+                try:
+                    with open("usuarios_cuentas.json", 'r') as archivo:
+                        datos_usuarios = js.load(archivo)
+                        if not isinstance(datos_usuarios, list):
+                            datos_usuarios = []
+                except (FileNotFoundError, js.JSONDecodeError):
+                    datos_usuarios = []
+                for usuario in datos_usuarios:
+                    if usuario['nombre'] == usuario_actual:
+                        contraseña_correcta = usuario['contraseña']
+                        break
+
+            if contraseña_ingresada != contraseña_correcta:
+                messagebox.showerror("Error", "Contraseña incorrecta. Transferencia cancelada.")
+                ventana_transferencia.destroy()
+                return
+            
+            # Proceder con la transferencia
+            cuenta_origen = datos_validos['cuenta_origen']
+            cuenta_destino = datos_validos['cuenta_destino']
+            monto = datos_validos['monto']
+            saldo_origen = datos_validos['saldo_origen']
+            destinatario = datos_validos['destinatario']
+            tipo_destino = datos_validos['tipo_destino']
+            datos_cuentas = datos_validos['datos_cuentas']
+            cuentas_destino = datos_validos['cuentas_destino']
 
             # Realizar transferencia
             nuevo_saldo_origen = saldo_origen - monto
@@ -857,7 +1008,8 @@ class NotebookFrame(tk.Frame):
             ventana_transferencia.destroy()
 
         # Botón para confirmar
-        ttk.Button(ventana_transferencia, text="Confirmar Transferencia", command=confirmar_transferencia).pack(pady=20)
+        boton_confirmar = ttk.Button(ventana_transferencia, text="Confirmar Transferencia", command=confirmar_transferencia)
+        boton_confirmar.pack(pady=20)
 
         # Botón para cancelar
         ttk.Button(ventana_transferencia, text="Cancelar", command=ventana_transferencia.destroy).pack(pady=5)
