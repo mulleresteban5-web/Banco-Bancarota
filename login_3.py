@@ -589,7 +589,15 @@ class NotebookFrame(tk.Frame):
         ttk.Button(pestana2, text="Transferencias", command=self.realizar_transferencia).pack(pady=10)
         ttk.Button(pestana2, text="Pedir préstamo", command=self.pedir_prestamo).pack(pady=10)
 
-    # Agrega este nuevo método en la clase NotebookFrame:
+        # Pestaña 3 - Ayuda
+        pestana3 = ttk.Frame(self.notebook)
+        self.notebook.add(pestana3, text="Ayuda")
+    
+        ttk.Label(pestana3, text="Centro de Ayuda - Modo Cliente", font=('Arial', 14, 'bold')).pack(pady=20)
+        ttk.Label(pestana3, text=f"Bienvenido Cliente: {self.controller.usuario_actual}").pack(pady=10)
+        ttk.Button(pestana3, text="Soporte al Cliente").pack(pady=10)
+        ttk.Button(pestana3, text="Preguntas Frecuentes").pack(pady=10)
+
     def pedir_prestamo(self):
         """Método para pedir un préstamo bancario"""
         # Verificar si el cliente tiene al menos una cuenta
@@ -611,15 +619,29 @@ class NotebookFrame(tk.Frame):
                     break
         except (FileNotFoundError, js.JSONDecodeError):
             pass  # Usar valor por defecto
+
+        # Verificar si el usuario tiene límite disponible
+        if limite_actual <= 0:
+            messagebox.showerror("Error", f"No tienes límite disponible para préstamos. Límite actual: ${limite_actual:,.0f}")
+            return
         
         # Crear ventana emergente para pedir préstamo
         ventana_prestamo = tk.Toplevel(self)
         ventana_prestamo.title("Pedir Préstamo")
         ventana_prestamo.geometry("400x300")
         ventana_prestamo.configure(bg="#b5ddd8")
+
+        # Mostrar límite disponible
+        etiqueta_limite = ttk.Label(ventana_prestamo, 
+                                    text=f"Límite disponible para préstamo: ${limite_actual:,.0f}",
+                                    font=('Arial', 12, 'bold'),
+                                    foreground="blue")
+        etiqueta_limite.pack(pady=10)
         
-        # Etiqueta y campo para monto del préstamo
-        etiqueta_monto = ttk.Label(ventana_prestamo, text="Monto del préstamo (máximo $500.000):", font=('Arial', 12, 'bold'))
+        # Etiqueta y campo para monto del préstamo (ACTUALIZADO para mostrar límite máximo)
+        etiqueta_monto = ttk.Label(ventana_prestamo, 
+                                text=f"Monto del préstamo (máximo ${limite_actual:,.0f}):",
+                                font=('Arial', 12, 'bold'))
         etiqueta_monto.pack(pady=10)
         entrada_monto = ttk.Entry(ventana_prestamo, width=20, font=('Arial', 12))
         entrada_monto.pack(pady=5)
@@ -651,10 +673,17 @@ class NotebookFrame(tk.Frame):
                 return
             try:
                 monto = int(monto_str)
-                if monto <= 0 or monto > 500000:
-                    raise ValueError
+                if monto < 1:
+                    messagebox.showerror("Error", "El monto mínimo es 1")
+                    return
+                if monto > limite_actual:  # VERIFICAR CONTRA LÍMITE ACTUAL
+                    messagebox.showerror("Error", 
+                                        f"El monto excede tu límite disponible.\n"
+                                        f"Monto solicitado: ${monto:,.0f}\n"
+                                        f"Límite disponible: ${limite_actual:,.0f}")
+                    return
             except ValueError:
-                messagebox.showerror("Error", "El monto debe ser un número entero entre 1 y 500.000.")
+                messagebox.showerror("Error", "El monto debe ser un número entero válido.")
                 return
             
             # Encontrar la cuenta seleccionada
@@ -734,19 +763,36 @@ class NotebookFrame(tk.Frame):
 
             # Reducir el límite de préstamo y guardar en usuarios_cuentas.json
             nuevo_limite = limite_actual - monto
+
             try:
                 with open("usuarios_cuentas.json", 'r') as archivo:
                     datos_usuarios = js.load(archivo)
                     if not isinstance(datos_usuarios, list):
                         datos_usuarios = []
+                
+                usuario_encontrado = False
                 for usuario in datos_usuarios:
                     if usuario['nombre_completo'] == usuario_actual:
                         usuario['limite_prestamo'] = nuevo_limite
+                        usuario_encontrado = True
                         break
+
+                # Si no encuentra al usuario, agregarlo
+                if not usuario_encontrado:
+                    datos_usuarios.append({
+                        'nombre_completo': usuario_actual,
+                        'limite_prestamo': nuevo_limite,
+                        'tipo': 'cliente'
+                    })
+                
                 with open("usuarios_cuentas.json", 'w') as archivo:
                     js.dump(datos_usuarios, archivo)
-            except (FileNotFoundError, js.JSONDecodeError):
-                pass  # Si no se puede guardar, continuar
+                    
+                print(f"Límite actualizado para {usuario_actual}: {nuevo_limite}")  # Para debugging
+            
+            except (FileNotFoundError, js.JSONDecodeError) as e:
+                print(f"Error al guardar límite: {e}")
+                # Continuar con la operación aunque falle guardar el límite
             
             # Actualizar treeview
             self.actualizar_treeview()
@@ -768,16 +814,6 @@ class NotebookFrame(tk.Frame):
         ventana_prestamo.transient(self)
         ventana_prestamo.grab_set()
         self.wait_window(ventana_prestamo)
-
-
-        # Pestaña 3 - Ayuda
-        pestana3 = ttk.Frame(self.notebook)
-        self.notebook.add(pestana3, text="Ayuda")
-    
-        ttk.Label(pestana3, text="Centro de Ayuda - Modo Cliente", font=('Arial', 14, 'bold')).pack(pady=20)
-        ttk.Label(pestana3, text=f"Bienvenido Cliente: {self.controller.usuario_actual}").pack(pady=10)
-        ttk.Button(pestana3, text="Soporte al Cliente").pack(pady=10)
-        ttk.Button(pestana3, text="Preguntas Frecuentes").pack(pady=10)
     
     def crear_cuenta(self):
         """Método para crear una nueva cuenta bancaria"""
