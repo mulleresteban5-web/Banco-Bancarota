@@ -359,7 +359,7 @@ class LoginFrame(tk.Frame):
                     return
             
             # Guardar nuevo usuario (actualizado con 'nombre_completo' y 'rut')
-            diccionario_a_guardar = {'nombre_completo': nombre_completo, 'rut': rut, 'contraseña': contraseña, 'tipo': 'cliente'}
+            diccionario_a_guardar = {'nombre_completo': nombre_completo, 'rut': rut, 'contraseña': contraseña, 'tipo': 'cliente', 'limite_prestamo': 500000}  # Agregar límite inicial}
             datos.append(diccionario_a_guardar)
             with open("usuarios_cuentas.json", 'w') as archivo:
                 js.dump(datos, archivo)
@@ -401,7 +401,7 @@ class LoginFrame(tk.Frame):
             # Si no existe o está corrupto, iniciar con lista vacía
             datos = []
 
-        diccionario_a_guardar = {'nombre_completo': nombre_completo, 'rut': rut, 'contraseña': contraseña, 'tipo': tipo}  # Actualizado con 'nombre_completo' y 'rut'
+        diccionario_a_guardar = {'nombre_completo': nombre_completo, 'rut': rut, 'contraseña': contraseña, 'tipo': tipo}
         datos.append(diccionario_a_guardar)
 
         with open("usuarios_cuentas.json", 'w') as archivo:
@@ -587,6 +587,188 @@ class NotebookFrame(tk.Frame):
     
         ttk.Button(pestana2, text="Crear cuenta", command=self.crear_cuenta).pack(pady=10)
         ttk.Button(pestana2, text="Transferencias", command=self.realizar_transferencia).pack(pady=10)
+        ttk.Button(pestana2, text="Pedir préstamo", command=self.pedir_prestamo).pack(pady=10)
+
+    # Agrega este nuevo método en la clase NotebookFrame:
+    def pedir_prestamo(self):
+        """Método para pedir un préstamo bancario"""
+        # Verificar si el cliente tiene al menos una cuenta
+        if not self.cuentas_data:
+            messagebox.showerror("Error", "Debes tener al menos una cuenta para pedir un préstamo.")
+            return
+        
+        # Cargar límite de préstamo del usuario
+        usuario_actual = self.controller.usuario_actual
+        limite_actual = 500000  # Valor por defecto
+        try:
+            with open("usuarios_cuentas.json", 'r') as archivo:
+                datos_usuarios = js.load(archivo)
+                if not isinstance(datos_usuarios, list):
+                    datos_usuarios = []
+            for usuario in datos_usuarios:
+                if usuario['nombre_completo'] == usuario_actual:
+                    limite_actual = usuario.get('limite_prestamo', 500000)  # Obtener límite o usar 500000 si no existe
+                    break
+        except (FileNotFoundError, js.JSONDecodeError):
+            pass  # Usar valor por defecto
+        
+        # Crear ventana emergente para pedir préstamo
+        ventana_prestamo = tk.Toplevel(self)
+        ventana_prestamo.title("Pedir Préstamo")
+        ventana_prestamo.geometry("400x300")
+        ventana_prestamo.configure(bg="#b5ddd8")
+        
+        # Etiqueta y campo para monto del préstamo
+        etiqueta_monto = ttk.Label(ventana_prestamo, text="Monto del préstamo (máximo $500.000):", font=('Arial', 12, 'bold'))
+        etiqueta_monto.pack(pady=10)
+        entrada_monto = ttk.Entry(ventana_prestamo, width=20, font=('Arial', 12))
+        entrada_monto.pack(pady=5)
+        
+        # Etiqueta y OptionMenu para seleccionar cuenta destino
+        etiqueta_cuenta = ttk.Label(ventana_prestamo, text="Seleccione la cuenta para recibir el dinero:", font=('Arial', 12, 'bold'))
+        etiqueta_cuenta.pack(pady=10)
+        cuentas_opciones = [f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}" for cuenta in self.cuentas_data]
+        cuenta_var = tk.StringVar(value=cuentas_opciones[0] if cuentas_opciones else "")
+        menu_cuenta = tk.OptionMenu(ventana_prestamo, cuenta_var, *cuentas_opciones)
+        menu_cuenta.pack(pady=10)
+        
+        # Elementos para validación de contraseña (inicialmente ocultos)
+        etiqueta_contraseña = ttk.Label(ventana_prestamo, text="Por favor ingrese su contraseña de usuario:", font=('Arial', 12, 'bold'))
+        etiqueta_contraseña.pack_forget()
+        entrada_contraseña = ttk.Entry(ventana_prestamo, width=20, font=('Arial', 12), show='*')
+        entrada_contraseña.pack_forget()
+        
+        # Variables para almacenar datos validados (se usan después de la contraseña)
+        datos_validos = {}
+        
+        def confirmar_prestamo():
+            monto_str = entrada_monto.get().strip()
+            cuenta_seleccionada = cuenta_var.get()
+            
+            # Validar monto
+            if not monto_str:
+                messagebox.showerror("Error", "Ingresa un monto para el préstamo.")
+                return
+            try:
+                monto = int(monto_str)
+                if monto <= 0 or monto > 500000:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", "El monto debe ser un número entero entre 1 y 500.000.")
+                return
+            
+            # Encontrar la cuenta seleccionada
+            cuenta_destino = None
+            for cuenta in self.cuentas_data:
+                if f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}" == cuenta_seleccionada:
+                    cuenta_destino = cuenta
+                    break
+            if not cuenta_destino:
+                messagebox.showerror("Error", "Cuenta destino no encontrada.")
+                return
+            
+            # Almacenar datos validados para usar después de la contraseña
+            datos_validos.update({
+                'cuenta_destino': cuenta_destino,
+                'monto': monto
+            })
+            
+            # Ocultar elementos anteriores y mostrar campo de contraseña
+            etiqueta_monto.pack_forget()
+            entrada_monto.pack_forget()
+            etiqueta_cuenta.pack_forget()
+            menu_cuenta.pack_forget()
+            etiqueta_contraseña.pack(pady=10)
+            entrada_contraseña.pack(pady=5)
+            
+            # Cambiar el botón a "Validar Contraseña"
+            boton_confirmar.config(text="Validar Contraseña", command=validar_contraseña)
+        
+        def validar_contraseña():
+            contraseña_ingresada = entrada_contraseña.get().strip()
+            if not contraseña_ingresada:
+                messagebox.showerror("Error", "Ingresa tu contraseña.")
+                return
+            
+            usuario_actual = self.controller.usuario_actual
+            print(f"Usuario actual: {usuario_actual}")  # Debug
+            print(f"Contraseña ingresada: {contraseña_ingresada}")  # Debug
+            
+            # Validar contraseña igual que en login: primero usuarios predefinidos, luego JSON
+            contraseña_correcta = None
+            if usuario_actual == "Gerente Pérez" and contraseña_ingresada == "gerente123":
+                contraseña_correcta = "gerente123"
+            elif usuario_actual == "Ana López" and contraseña_ingresada == "ana123":
+                contraseña_correcta = "ana123"
+            elif usuario_actual == "Pedro García" and contraseña_ingresada == "pedro123":
+                contraseña_correcta = "pedro123"
+            elif usuario_actual == "Juan Martínez" and contraseña_ingresada == "juan123":
+                contraseña_correcta = "juan123"
+            else:
+                # Para usuarios registrados nuevos, buscar en usuarios_cuentas.json
+                try:
+                    with open("usuarios_cuentas.json", 'r') as archivo:
+                        datos_usuarios = js.load(archivo)
+                        if not isinstance(datos_usuarios, list):
+                            datos_usuarios = []
+                except (FileNotFoundError, js.JSONDecodeError):
+                    datos_usuarios = []
+                for usuario in datos_usuarios:
+                    if usuario['nombre_completo'] == usuario_actual:
+                        contraseña_correcta = usuario['contraseña']
+                        break
+            
+            if contraseña_ingresada != contraseña_correcta:
+                messagebox.showerror("Error", "Contraseña incorrecta. Préstamo cancelado.")
+                ventana_prestamo.destroy()
+                return
+            
+            # Proceder con el préstamo
+            cuenta_destino = datos_validos['cuenta_destino']
+            monto = datos_validos['monto']
+            
+            # Actualizar saldo de la cuenta destino
+            saldo_actual = float(cuenta_destino['saldo'].replace('$', '').replace('.', '').replace(',', ''))
+            nuevo_saldo = saldo_actual + monto
+            cuenta_destino['saldo'] = f"${nuevo_saldo:,.0f}".replace(',', '.')
+
+            # Reducir el límite de préstamo y guardar en usuarios_cuentas.json
+            nuevo_limite = limite_actual - monto
+            try:
+                with open("usuarios_cuentas.json", 'r') as archivo:
+                    datos_usuarios = js.load(archivo)
+                    if not isinstance(datos_usuarios, list):
+                        datos_usuarios = []
+                for usuario in datos_usuarios:
+                    if usuario['nombre_completo'] == usuario_actual:
+                        usuario['limite_prestamo'] = nuevo_limite
+                        break
+                with open("usuarios_cuentas.json", 'w') as archivo:
+                    js.dump(datos_usuarios, archivo)
+            except (FileNotFoundError, js.JSONDecodeError):
+                pass  # Si no se puede guardar, continuar
+            
+            # Actualizar treeview
+            self.actualizar_treeview()
+            
+            # Guardar cambios en cuentas.json
+            self.guardar_cuentas()
+            
+            messagebox.showinfo("Éxito", f"Préstamo de ${monto:,.0f} aprobado y depositado en la cuenta {cuenta_destino['tipo']} - {cuenta_destino['numero']}.")
+            ventana_prestamo.destroy()
+        
+        # Botón para confirmar
+        boton_confirmar = ttk.Button(ventana_prestamo, text="Confirmar Préstamo", command=confirmar_prestamo)
+        boton_confirmar.pack(pady=20)
+
+        # Botón para cancelar
+        ttk.Button(ventana_prestamo, text="Cancelar", command=ventana_prestamo.destroy).pack(pady=5)
+        
+        # Centrar ventana emergente
+        ventana_prestamo.transient(self)
+        ventana_prestamo.grab_set()
+        self.wait_window(ventana_prestamo)
+
 
         # Pestaña 3 - Ayuda
         pestana3 = ttk.Frame(self.notebook)
