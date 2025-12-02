@@ -86,11 +86,10 @@ class LoginFrame(tk.Frame):
             logo_label = tk.Label(self, image=self.logo_image, bg="#b5ddd8")
             logo_label.pack(pady=(20, 10))  # Espaciado superior e inferior
 
-        # Etiqueta y campo para nombre
-        texto_nombre = tk.Label(self, text='Nombre: ', font=('Arial', 30, 'bold'), 
-                               bg='#b5ddd8', fg='white')
+        # Etiqueta y campo para nombre y apellido (cambiado de "Nombre:" a "Nombre y Apellido:")
+        texto_nombre = tk.Label(self, text='Nombre y Apellido: ', font=('Arial', 30, 'bold'), 
+                       bg='#b5ddd8', fg='white')
         texto_nombre.pack(padx=25, pady=25)
-        
         self.cuadro_texto_entrada_nombre = tk.Entry(self, width=13, font=('Arial', 20))
         self.cuadro_texto_entrada_nombre.pack(padx=25, pady=25)
         
@@ -126,17 +125,22 @@ class LoginFrame(tk.Frame):
     
     def verificar_login(self):
         """Función para verificar el login y manejar los datos"""
-        nombre = self.cuadro_texto_entrada_nombre.get().strip()
+        nombre_completo = self.cuadro_texto_entrada_nombre.get().strip()  # Cambiado de 'nombre' a 'nombre_completo'
         contraseña = self.cuadro_texto_entrada_contraseña.get().strip()
 
         # Validar que se ingresaron ambos campos
-        if not nombre or not contraseña:
-            messagebox.showerror("Error", "Por favor ingresa nombre y contraseña")
+        if not nombre_completo or not contraseña:
+            messagebox.showerror("Error", "Por favor ingresa nombre, apellido y contraseña")
             return
         
-        # Validar que el nombre no contenga espacios ni caracteres especiales (solo letras y números)
-        if not re.match(r'^[a-zA-Z0-9]+$', nombre):
-            messagebox.showerror("Error", "El nombre solo puede contener letras y números, sin espacios ni caracteres especiales")
+        # Validar que el nombre completo contenga al menos nombre y apellido (al menos dos palabras)
+        if len(nombre_completo.split()) < 2:
+            messagebox.showerror("Error", "El nombre debe incluir nombre y apellido, separados por espacio")
+            return
+        
+        # Validar que el nombre completo no contenga caracteres especiales (solo letras, acentos y espacios)
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', nombre_completo):  # <-- CAMBIO: Agregado acentos y ñ
+            messagebox.showerror("Error", "El nombre solo puede contener letras, acentos y espacios, sin números ni caracteres especiales")  # <-- CAMBIO: Mensaje actualizado
             return
         
         # Validar que la contraseña no contenga espacios ni caracteres especiales (solo letras y números)
@@ -144,10 +148,10 @@ class LoginFrame(tk.Frame):
             messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
             return
     
-        # Verificar si es gerente
-        if nombre == "Gerente":
+        # Verificar si es gerente (con apellido y RUT)
+        if nombre_completo == "Gerente Pérez":
             if contraseña == "gerente123":
-                self.controller.usuario_actual = nombre
+                self.controller.usuario_actual = nombre_completo
                 self.controller.tipo_usuario = "gerente"
             
                 tipo = "gerente"
@@ -156,8 +160,8 @@ class LoginFrame(tk.Frame):
                 self.cuadro_texto_entrada_nombre.delete(0, tk.END)
                 self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
             
-                # Guardar datos en usuarios_cuentas.json
-                self.guardar_usuario(nombre, contraseña, tipo)
+                # Guardar datos en usuarios_cuentas.json (agregado RUT)
+                self.guardar_usuario(nombre_completo, "11111111-1", contraseña, tipo)
 
                 # Limpiar el mensaje de bienvenido antes de cambiar al notebook
                 self.texto.config(text="")  # <-- LÍNEA NUEVA: Borra el mensaje
@@ -166,13 +170,13 @@ class LoginFrame(tk.Frame):
                 self.controller.mostrar_frame("NotebookFrame")
             else:
                 # Contraseña incorrecta para Gerente
-                messagebox.showerror("Error", "Contraseña incorrecta para Gerente")
+                messagebox.showerror("Error", "Contraseña incorrecta para Gerente Pérez")
                 self.texto.config(text="")
                 return
-        # Verificar si es cliente específico: Ana
-        elif nombre == "Ana":
+        # Verificar si es cliente específico: Ana (con apellido y RUT)
+        elif nombre_completo == "Ana López":
             if contraseña == "ana123":
-                self.controller.usuario_actual = nombre
+                self.controller.usuario_actual = nombre_completo
                 self.controller.tipo_usuario = "cliente"
             
                 tipo = "cliente"
@@ -181,20 +185,20 @@ class LoginFrame(tk.Frame):
                 self.cuadro_texto_entrada_nombre.delete(0, tk.END)
                 self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
             
-                # Guardar datos en usuarios_cuentas.json
-                self.guardar_usuario(nombre, contraseña, tipo)
+                # Guardar datos en usuarios_cuentas.json (agregado RUT)
+                self.guardar_usuario(nombre_completo, "22222222-2", contraseña, tipo)
             
                 # Mostrar notebook
                 self.controller.mostrar_frame("NotebookFrame")
             else:
                 # Contraseña incorrecta para Ana
-                messagebox.showerror("Error", "Contraseña incorrecta para Ana")
+                messagebox.showerror("Error", "Contraseña incorrecta para Ana López")
                 self.texto.config(text="")
                 return
         # Verificar si es cliente específico: Pedro
-        elif nombre == "Pedro":
+        elif nombre_completo == "Pedro García":
             if contraseña == "pedro123":
-                self.controller.usuario_actual = nombre
+                self.controller.usuario_actual = nombre_completo
                 self.controller.tipo_usuario = "cliente"
             
                 tipo = "cliente"
@@ -203,20 +207,20 @@ class LoginFrame(tk.Frame):
                 self.cuadro_texto_entrada_nombre.delete(0, tk.END)
                 self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
             
-                # Guardar datos en usuarios_cuentas.json
-                self.guardar_usuario(nombre, contraseña, tipo)
+                # Guardar datos en usuarios_cuentas.json (agregado RUT)
+                self.guardar_usuario(nombre_completo, "33333333-3", contraseña, tipo)
             
                 # Mostrar notebook
                 self.controller.mostrar_frame("NotebookFrame")
             else:
                 # Contraseña incorrecta para Pedro
-                messagebox.showerror("Error", "Contraseña incorrecta para Pedro")
+                messagebox.showerror("Error", "Contraseña incorrecta para Pedro García")
                 self.texto.config(text="")
                 return
-        # Verificar si es cliente específico: Juan
-        elif nombre == "Juan":
+        # Verificar si es cliente específico: Juan (con apellido y RUT)
+        elif nombre_completo == "Juan Martínez":
             if contraseña == "juan123":
-                self.controller.usuario_actual = nombre
+                self.controller.usuario_actual = nombre_completo
                 self.controller.tipo_usuario = "cliente"
             
                 tipo = "cliente"
@@ -225,14 +229,14 @@ class LoginFrame(tk.Frame):
                 self.cuadro_texto_entrada_nombre.delete(0, tk.END)
                 self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
             
-                # Guardar datos en usuarios_cuentas.json
-                self.guardar_usuario(nombre, contraseña, tipo)
+                # Guardar datos en usuarios_cuentas.json (agregado RUT)
+                self.guardar_usuario(nombre_completo, "44444444-4", contraseña, tipo)
             
                 # Mostrar notebook
                 self.controller.mostrar_frame("NotebookFrame")
             else:
                 # Contraseña incorrecta para Juan
-                messagebox.showerror("Error", "Contraseña incorrecta para Juan")
+                messagebox.showerror("Error", "Contraseña incorrecta para Juan Martínez")
                 self.texto.config(text="")
                 return
         else:
@@ -246,13 +250,15 @@ class LoginFrame(tk.Frame):
                 datos = []
             
             usuario_encontrado = False
+            rut_usuario = None  # Para obtener el RUT si se encuentra
             for usuario in datos:
-                if usuario['nombre'] == nombre and usuario['contraseña'] == contraseña:
+                if usuario['nombre_completo'] == nombre_completo and usuario['contraseña'] == contraseña:
                     usuario_encontrado = True
+                    rut_usuario = usuario['rut']
                     break
             
             if usuario_encontrado:
-                self.controller.usuario_actual = nombre
+                self.controller.usuario_actual = nombre_completo
                 self.controller.tipo_usuario = "cliente"
             
                 tipo = "cliente"
@@ -261,8 +267,8 @@ class LoginFrame(tk.Frame):
                 self.cuadro_texto_entrada_nombre.delete(0, tk.END)
                 self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
             
-                # Guardar datos en usuarios_cuentas.json (aunque ya existe, se reescribe)
-                self.guardar_usuario(nombre, contraseña, tipo)
+                # Guardar datos en usuarios_cuentas.json (usando RUT existente)
+                self.guardar_usuario(nombre_completo, rut_usuario, contraseña, tipo)
             
                 # Mostrar notebook
                 self.controller.mostrar_frame("NotebookFrame")
@@ -276,13 +282,18 @@ class LoginFrame(tk.Frame):
         # Crear ventana emergente para registro
         ventana_registro = tk.Toplevel(self)
         ventana_registro.title("Registro de Usuario")
-        ventana_registro.geometry("400x300")
+        ventana_registro.geometry("400x350")
         ventana_registro.configure(bg="#b5ddd8")
         
-        # Etiqueta y campo para nombre
-        ttk.Label(ventana_registro, text="Nombre de usuario:", font=('Arial', 14, 'bold')).pack(pady=10)
+        # Etiqueta y campo para nombre y apellido (cambiado de "Nombre de usuario:")
+        ttk.Label(ventana_registro, text="Nombre y Apellido:", font=('Arial', 14, 'bold')).pack(pady=10)
         entrada_nombre = ttk.Entry(ventana_registro, width=20, font=('Arial', 12))
         entrada_nombre.pack(pady=5)
+
+        # Etiqueta y campo para RUT (nuevo campo)
+        ttk.Label(ventana_registro, text="RUT (ej: 12345678-9):", font=('Arial', 14, 'bold')).pack(pady=10)
+        entrada_rut = ttk.Entry(ventana_registro, width=20, font=('Arial', 12))
+        entrada_rut.pack(pady=5)
         
         # Etiqueta y campo para contraseña
         ttk.Label(ventana_registro, text="Contraseña:", font=('Arial', 14, 'bold')).pack(pady=10)
@@ -290,23 +301,36 @@ class LoginFrame(tk.Frame):
         entrada_contraseña.pack(pady=5)
         
         def confirmar_registro():
-            nombre = entrada_nombre.get().strip()
+            nombre_completo = entrada_nombre.get().strip()  # Cambiado de 'nombre'
+            rut = entrada_rut.get().strip()  # Nuevo
             contraseña = entrada_contraseña.get().strip()
             
             # Validar campos
-            if not nombre or not contraseña:
-                messagebox.showerror("Error", "Por favor ingresa nombre y contraseña")
+            if not nombre_completo or not rut or not contraseña:
+                messagebox.showerror("Error", "Por favor ingresa nombre y apellido, RUT y contraseña")
                 return
 
-            # Validar formato
-            if not re.match(r'^[a-zA-Z0-9]+$', nombre):
-                messagebox.showerror("Error", "El nombre solo puede contener letras y números, sin espacios ni caracteres especiales")
+            # Validar nombre completo
+            if len(nombre_completo.split()) < 2:
+                messagebox.showerror("Error", "El nombre debe incluir nombre y apellido, separados por espacio")
                 return
+            
+            # Validar que el nombre completo no contenga caracteres especiales (solo letras y espacios)
+            if not re.match(r'^[a-zA-Z\s]+$', nombre_completo):  # <-- CAMBIO: Ahora permite espacios (\s)
+               messagebox.showerror("Error", "El nombre solo puede contener letras y espacios, sin números ni caracteres especiales")  # <-- CAMBIO: Mensaje actualizado
+               return
+            
+            # Validar RUT (formato básico: dígitos-guion-dígito)
+            if not re.match(r'^\d{7,8}-[\dKk]$', rut):
+                messagebox.showerror("Error", "RUT inválido. Formato: 12345678-9 o 1234567-K")
+                return
+            
+            #Validar contraseña
             if not re.match(r'^[a-zA-Z0-9]+$', contraseña):
                 messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
                 return
             
-            # Verificar unicidad
+            # Verificar unicidad de nombre_completo y RUT (actualizado)
             try:
                 with open("usuarios_cuentas.json", 'r') as archivo:
                     datos = js.load(archivo)
@@ -314,24 +338,33 @@ class LoginFrame(tk.Frame):
                         datos = []
             except (FileNotFoundError, js.JSONDecodeError):
                 datos = []
-            
+        
             for usuario in datos:
-                if usuario['nombre'] == nombre:
-                    messagebox.showerror("Error", "El nombre de usuario ya existe. Elige otro.")
+                if usuario['rut'] == rut:
+                    messagebox.showerror("Error", "El RUT ya está registrado.")
                     return
-            # Verificar contra usuarios predefinidos
-            usuarios_predefinidos = ["Gerente", "Ana", "Pedro", "Juan"]
-            if nombre in usuarios_predefinidos:
-                messagebox.showerror("Error", "El nombre de usuario ya existe. Elige otro.")
-                return
+                if usuario['contraseña'] == contraseña:  # <-- NUEVO: Verificar unicidad de contraseña
+                    messagebox.showerror("Error", "La contraseña ya está en uso por otro usuario. Elige una contraseña diferente.")
+                    return    
+            # Verificar contra usuarios predefinidos (actualizado con apellidos y RUT)
+            usuarios_predefinidos = [
+                {"nombre_completo": "Gerente Pérez", "rut": "11111111-1"},
+                {"nombre_completo": "Ana López", "rut": "22222222-2"},
+                {"nombre_completo": "Pedro García", "rut": "33333333-3"},
+                {"nombre_completo": "Juan Martínez", "rut": "44444444-4"}
+            ]
+            for pred in usuarios_predefinidos:
+                if pred['nombre_completo'] == nombre_completo or pred['rut'] == rut:
+                    messagebox.showerror("Error", "El ususario ya existe. Elige otro.")
+                    return
             
-            # Guardar nuevo usuario
-            diccionario_a_guardar = {'nombre': nombre, 'contraseña': contraseña, 'tipo': 'cliente'}
+            # Guardar nuevo usuario (actualizado con 'nombre_completo' y 'rut')
+            diccionario_a_guardar = {'nombre_completo': nombre_completo, 'rut': rut, 'contraseña': contraseña, 'tipo': 'cliente'}
             datos.append(diccionario_a_guardar)
             with open("usuarios_cuentas.json", 'w') as archivo:
                 js.dump(datos, archivo)
             
-            # Crear entrada vacía en cuentas.json para el nuevo usuario
+            # Crear entrada vacía en cuentas.json para el nuevo usuario (usando nombre_completo como clave)
             try:
                 with open("cuentas.json", 'r') as archivo:
                     cuentas_globales = js.load(archivo)
@@ -340,11 +373,11 @@ class LoginFrame(tk.Frame):
             except (FileNotFoundError, js.JSONDecodeError):
                 cuentas_globales = {}
             
-            cuentas_globales[nombre] = []  # Lista vacía de cuentas
+            cuentas_globales[nombre_completo] = []  # Lista vacía de cuentas
             with open("cuentas.json", 'w') as archivo:
                 js.dump(cuentas_globales, archivo)
 
-            messagebox.showinfo("Éxito", f"Usuario {nombre} registrado exitosamente. Ahora puedes iniciar sesión.")
+            messagebox.showinfo("Éxito", f"Usuario {nombre_completo} registrado exitosamente. Ahora puedes iniciar sesión.")
             ventana_registro.destroy()
         
         # Botones
@@ -356,7 +389,7 @@ class LoginFrame(tk.Frame):
         ventana_registro.grab_set()
         self.wait_window(ventana_registro)
 
-    def guardar_usuario(self, nombre, contraseña, tipo):
+    def guardar_usuario(self, nombre_completo, rut, contraseña, tipo):
         """Función auxiliar para guardar usuario en el archivo JSON"""
         try:
             with open("usuarios_cuentas.json", 'r') as archivo:
@@ -368,7 +401,7 @@ class LoginFrame(tk.Frame):
             # Si no existe o está corrupto, iniciar con lista vacía
             datos = []
 
-        diccionario_a_guardar = {'nombre': nombre, 'contraseña': contraseña, 'tipo': tipo}
+        diccionario_a_guardar = {'nombre_completo': nombre_completo, 'rut': rut, 'contraseña': contraseña, 'tipo': tipo}  # Actualizado con 'nombre_completo' y 'rut'
         datos.append(diccionario_a_guardar)
 
         with open("usuarios_cuentas.json", 'w') as archivo:
@@ -486,16 +519,16 @@ class NotebookFrame(tk.Frame):
 
         # Diccionario de cuentas iniciales por usuario (agrega más usuarios aquí)
         cuentas_por_defecto = {
-            "Juan": [
+            "Juan Martínez": [
                 {"id": "1", "tipo": "Cuenta Vista", "numero": "111111111", "saldo": "$10.000"},
                 {"id": "2", "tipo": "Cuenta de Ahorros", "numero": "111111111", "saldo": "$50.000"}
             ],
-            "Ana": [
+            "Ana López": [
                 {"id": "1", "tipo": "Cuenta Corriente", "numero": "222222222", "saldo": "$25.000"},
                 {"id": "2", "tipo": "Cuenta Rut", "numero": "222222222", "saldo": "$5.000"},
                 {"id": "3", "tipo": "Cuenta de Ahorros", "numero": "222222222", "saldo": "$100.000"}
             ],
-            "Pedro": [
+            "Pedro García": [
                 {"id": "1", "tipo": "Cuenta Vista", "numero": "333333333", "saldo": "$15.000"},
                 {"id": "2", "tipo": "Cuenta Corriente", "numero": "333333333", "saldo": "$75.000"},
                 {"id": "3", "tipo": "Cuenta Rut", "numero": "333333333", "saldo": "$20.000"},
@@ -587,15 +620,37 @@ class NotebookFrame(tk.Frame):
             for cuenta in self.cuentas_data:
                 if cuenta["tipo"] == tipo_seleccionado:
                     messagebox.showerror("Error", f"Ya tienes una cuenta de tipo '{tipo_seleccionado}'. No puedes crear otra del mismo tipo.")
-                    return            
+                    return
+            
+            # Obtener el RUT del usuario actual desde usuarios_cuentas.json
+            usuario_actual = self.controller.usuario_actual
+            rut_usuario = None
+            try:
+                with open("usuarios_cuentas.json", 'r') as archivo:
+                    datos_usuarios = js.load(archivo)
+                    if not isinstance(datos_usuarios, list):
+                        datos_usuarios = []
+                for usuario in datos_usuarios:
+                    if usuario['nombre_completo'] == usuario_actual:
+                        rut_usuario = usuario['rut']
+                        break
+            except (FileNotFoundError, js.JSONDecodeError):
+                messagebox.showerror("Error", "No se pudo acceder a los datos del usuario.")
+                return
         
-            # Generar un número de cuenta único (9 dígitos aleatorios)
-            numero_cuenta = str(random.randint(100000000, 999999999))
+            if not rut_usuario:
+                messagebox.showerror("Error", "RUT del usuario no encontrado.")
+                return
         
-            # Verificar que el número no exista ya para este usuario
-            for cuenta in self.cuentas_data:
-                if cuenta["numero"] == numero_cuenta:
-                    numero_cuenta = str(random.randint(100000000, 999999999))  # Generar otro si choca
+            # Generar número de cuenta: si es "Cuenta Rut", usar el RUT sin guión; de lo contrario, aleatorio
+            if tipo_seleccionado == "Cuenta Rut":
+                numero_cuenta = rut_usuario.replace("-", "")  # Usar RUT sin guión como número de cuenta
+            else:
+                numero_cuenta = str(random.randint(100000000, 999999999))
+                # Verificar que el número no exista ya para este usuario
+                for cuenta in self.cuentas_data:
+                    if cuenta["numero"] == numero_cuenta:
+                        numero_cuenta = str(random.randint(100000000, 999999999))  # Generar otro si choca
         
             # Crear nueva cuenta con saldo 0
             nueva_cuenta = {
@@ -855,7 +910,7 @@ class NotebookFrame(tk.Frame):
             except (FileNotFoundError, js.JSONDecodeError):
                 datos_usuarios = []
             
-            usuario_encontrado = any(u['nombre'] == destinatario for u in datos_usuarios)
+            usuario_encontrado = any(u['nombre_completo'] == destinatario for u in datos_usuarios)
             if not usuario_encontrado:
                 messagebox.showerror("Error", "Usuario no registrado.")
                 return
@@ -880,13 +935,16 @@ class NotebookFrame(tk.Frame):
             # Usar la primera cuenta del tipo seleccionado (no selección específica)
             cuenta_destino = cuentas_filtradas[0]
 
-            # Validar monto
+            # Validar monto: solo enteros, sin decimales
+            if '.' in monto_str or ',' in monto_str:
+                messagebox.showerror("Error", "El monto debe ser un número entero, sin decimales.")
+                return
             try:
-                monto = float(monto_str)
+                monto = int(monto_str)
                 if monto < 1:
                     raise ValueError
             except ValueError:
-                messagebox.showerror("Error", "Ingrese un monto mayor o igual a 1.")
+                messagebox.showerror("Error", "Ingrese un monto entero mayor o igual a 1.")
                 return
 
             # Encontrar cuenta de origen
@@ -949,13 +1007,13 @@ class NotebookFrame(tk.Frame):
             
             # Validar contraseña igual que en login: primero usuarios predefinidos, luego JSON
             contraseña_correcta = None
-            if usuario_actual == "Gerente" and contraseña_ingresada == "gerente123":
+            if usuario_actual == "Gerente Pérez" and contraseña_ingresada == "gerente123":
                 contraseña_correcta = "gerente123"
-            elif usuario_actual == "Ana" and contraseña_ingresada == "ana123":
+            elif usuario_actual == "Ana López" and contraseña_ingresada == "ana123":
                 contraseña_correcta = "ana123"
-            elif usuario_actual == "Pedro" and contraseña_ingresada == "pedro123":
+            elif usuario_actual == "Pedro García" and contraseña_ingresada == "pedro123":
                 contraseña_correcta = "pedro123"
-            elif usuario_actual == "Juan" and contraseña_ingresada == "juan123":
+            elif usuario_actual == "Juan Martínez" and contraseña_ingresada == "juan123":
                 contraseña_correcta = "juan123"
             else:
                 # Para usuarios registrados nuevos, buscar en usuarios_cuentas.json
@@ -967,7 +1025,7 @@ class NotebookFrame(tk.Frame):
                 except (FileNotFoundError, js.JSONDecodeError):
                     datos_usuarios = []
                 for usuario in datos_usuarios:
-                    if usuario['nombre'] == usuario_actual:
+                    if usuario['nombre_completo'] == usuario_actual:
                         contraseña_correcta = usuario['contraseña']
                         break
 
