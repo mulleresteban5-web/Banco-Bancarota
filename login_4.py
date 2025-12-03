@@ -62,6 +62,14 @@ class Aplicacion(tk.Tk):
         y = (self.winfo_screenheight() // 2) - (alto // 2)
         self.geometry(f'{ancho}x{alto}+{x}+{y}')
 
+    def centrar_ventana_emergente(self, ventana):
+        """Centra una ventana emergente en la pantalla"""
+        ventana.update_idletasks()  # Asegura que Tkinter calcule el tamaño real
+        ancho = ventana.winfo_width()
+        alto = ventana.winfo_height()
+        x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
+        y = (ventana.winfo_screenheight() // 2) - (alto // 2)
+        ventana.geometry(f'{ancho}x{alto}+{x}+{y}')
 
 class LoginFrame(tk.Frame):
     def __init__(self, parent, controller):
@@ -384,6 +392,9 @@ class LoginFrame(tk.Frame):
         # Botones
         ttk.Button(ventana_registro, text="Registrar", command=confirmar_registro).pack(pady=20)
         ttk.Button(ventana_registro, text="Cancelar", command=ventana_registro.destroy).pack(pady=5)
+
+        # <-- AGREGADO: Centrar la ventana emergente después de agregar widgets
+        self.controller.centrar_ventana_emergente(ventana_registro)
         
         # Centrar ventana emergente
         ventana_registro.transient(self)
@@ -420,6 +431,15 @@ class NotebookFrame(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.crear_interfaz()
+
+    def centrar_ventana_emergente(self, ventana):
+        """Centra una ventana emergente en la pantalla"""
+        ventana.update_idletasks()  # Asegura que Tkinter calcule el tamaño real
+        ancho = ventana.winfo_width()
+        alto = ventana.winfo_height()
+        x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
+        y = (ventana.winfo_screenheight() // 2) - (alto // 2)
+        ventana.geometry(f'{ancho}x{alto}+{x}+{y}')
     
     def crear_interfaz(self):
         # Configurar el frame para expandirse
@@ -839,6 +859,9 @@ class NotebookFrame(tk.Frame):
 
         # Botón para cancelar
         ttk.Button(ventana_prestamo, text="Cancelar", command=ventana_prestamo.destroy).pack(pady=5)
+
+        # Centrar la ventana emergente después de agregar widgets
+        self.controller.centrar_ventana_emergente(ventana_prestamo)
         
         # Centrar ventana emergente
         ventana_prestamo.transient(self)
@@ -993,6 +1016,9 @@ class NotebookFrame(tk.Frame):
         
         ttk.Button(ventana_pagar, text="Confirmar Pago", command=confirmar_pago).pack(pady=20)
         ttk.Button(ventana_pagar, text="Cancelar", command=ventana_pagar.destroy).pack(pady=5)
+
+        # Centrar la ventana emergente después de agregar widgets
+        self.controller.centrar_ventana_emergente(ventana_pagar)
         
         # Centrar ventana emergente
         ventana_pagar.transient(self)
@@ -1012,6 +1038,9 @@ class NotebookFrame(tk.Frame):
         ttk.Button(ventana_popup, text="Pedir préstamo", command=lambda: [ventana_popup.destroy(), self.pedir_prestamo()]).pack(pady=10)
         ttk.Button(ventana_popup, text="Pagar préstamo", command=lambda: [ventana_popup.destroy(), self.pagar_prestamo()]).pack(pady=10)
         
+        # Centrar la ventana emergente después de agregar widgets
+        self.controller.centrar_ventana_emergente(ventana_popup)
+
         # Centrar ventana emergente
         ventana_popup.transient(self)
         ventana_popup.grab_set()
@@ -1100,6 +1129,9 @@ class NotebookFrame(tk.Frame):
     
         # Botón para cancelar
         ttk.Button(ventana_crear, text="Cancelar", command=ventana_crear.destroy).pack(pady=10)
+
+        # <-- AGREGADO: Centrar la ventana emergente después de agregar widgets
+        self.controller.centrar_ventana_emergente(ventana_crear)
     
         # Centrar la ventana emergente
         ventana_crear.transient(self)
@@ -1169,7 +1201,7 @@ class NotebookFrame(tk.Frame):
             messagebox.showwarning("Advertencia", "Por favor seleccione al menos una cuenta para eliminar")
             return
         
-                # Verificar si hay más de una cuenta en total
+        # Verificar si hay más de una cuenta en total
         if len(self.cuentas_data) <= 1:
             messagebox.showerror("Error", "No puedes eliminar tu única cuenta. Debes tener al menos una cuenta activa.")
             return
@@ -1244,6 +1276,9 @@ class NotebookFrame(tk.Frame):
 
         ttk.Button(ventana_destino, text="Confirmar", command=confirmar).pack(pady=10)
         ttk.Button(ventana_destino, text="Cancelar", command=ventana_destino.destroy).pack(pady=5)
+
+        # <-- AGREGADO: Centrar la ventana emergente después de agregar widgets
+        self.controller.centrar_ventana_emergente(ventana_destino)
     
         # Centrar y esperar
         ventana_destino.transient(self)
@@ -1262,7 +1297,7 @@ class NotebookFrame(tk.Frame):
         # Crear ventana emergente para transferencia
         ventana_transferencia = tk.Toplevel(self)
         ventana_transferencia.title("Realizar Transferencia")
-        ventana_transferencia.geometry("500x400")
+        ventana_transferencia.geometry("650x550")
         ventana_transferencia.configure(bg="#b5ddd8")
 
         # Etiqueta y OptionMenu para seleccionar cuenta de origen
@@ -1292,6 +1327,12 @@ class NotebookFrame(tk.Frame):
         entrada_destinatario = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
         entrada_destinatario.pack(pady=5)
 
+        # Agregar etiqueta y campo para RUT del destinatario
+        etiqueta_rut = ttk.Label(ventana_transferencia, text="RUT del destinatario (ej: 12345678-9):", font=('Arial', 12, 'bold'))
+        etiqueta_rut.pack(pady=10)
+        entrada_rut = ttk.Entry(ventana_transferencia, width=20, font=('Arial', 12))
+        entrada_rut.pack(pady=5)
+
         # Etiqueta y campo para monto
         etiqueta_monto = ttk.Label(ventana_transferencia, text="Monto a transferir (ej: 1000):", font=('Arial', 12, 'bold'))
         etiqueta_monto.pack(pady=10)
@@ -1312,16 +1353,26 @@ class NotebookFrame(tk.Frame):
             origen_seleccionado = origen_var.get()
             tipo_destino = tipo_destino_var.get()
             destinatario = entrada_destinatario.get().strip()
+            rut_destinatario = entrada_rut.get().strip()
             monto_str = entrada_monto.get().strip()
             # Validar que se haya seleccionado tipo
             if not tipo_destino:
                 messagebox.showerror("Error", "Selecciona un tipo de cuenta de destino.")
                 return
-            # Validar destinatario
+            # Validar nombre de destinatario
             if not destinatario:
                 messagebox.showerror("Error", "Ingresa el nombre del destinatario.")
                 return
-            # Verificar si el destinatario está registrado
+            
+            # Validar RUT (formato y presencia)
+            if not rut_destinatario:
+                messagebox.showerror("Error", "Ingresa el RUT del destinatario.")
+                return
+            if not re.match(r'^\d{7,8}-[\dKk]$', rut_destinatario):
+                messagebox.showerror("Error", "RUT inválido. Formato: 12345678-9 o 1234567-K")
+                return
+            
+            # Verificar que el nombre y RUT coincidan exactamente con un usuario registrado
             try:
                 with open("usuarios_cuentas.json", 'r') as archivo:
                     datos_usuarios = js.load(archivo)
@@ -1330,10 +1381,16 @@ class NotebookFrame(tk.Frame):
             except (FileNotFoundError, js.JSONDecodeError):
                 datos_usuarios = []
             
-            usuario_encontrado = any(u['nombre_completo'] == destinatario for u in datos_usuarios)
+            usuario_encontrado = None
+            for u in datos_usuarios:
+                if u['nombre_completo'] == destinatario and u['rut'] == rut_destinatario:
+                    usuario_encontrado = u
+                    break
+            
             if not usuario_encontrado:
-                messagebox.showerror("Error", "Usuario no registrado.")
+                messagebox.showerror("Error", "Usuario no registrado o nombre y RUT no coinciden.")
                 return
+            
             # Cargar cuentas del destinatario
             try:
                 with open("cuentas.json", 'r') as archivo:
@@ -1401,18 +1458,18 @@ class NotebookFrame(tk.Frame):
             })
 
             # Ocultar elementos anteriores y mostrar campo de contraseña
-            etiqueta_origen.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de origen
+            etiqueta_origen.pack_forget()  #Ocultar etiqueta de origen
             menu_origen.pack_forget()
-            etiqueta_tipo.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de tipo
+            etiqueta_tipo.pack_forget()  #Ocultar etiqueta de tipo
             combobox_tipo.pack_forget()
-            etiqueta_destinatario.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de destinatario
+            etiqueta_destinatario.pack_forget()  #Ocultar etiqueta de destinatario
             entrada_destinatario.pack_forget()
-            etiqueta_monto.pack_forget()  # <-- AGREGADO: Ocultar etiqueta de monto
+            etiqueta_monto.pack_forget()  #Ocultar etiqueta de monto
             entrada_monto.pack_forget()
             etiqueta_contraseña.pack(pady=10)
             entrada_contraseña.pack(pady=5)
 
-            # Cambiar el botón a "Validar Contraseña"
+            # Botón "Validar Contraseña"
             boton_confirmar.config(text="Validar Contraseña", command=validar_contraseña)
 
         def validar_contraseña():
@@ -1491,6 +1548,9 @@ class NotebookFrame(tk.Frame):
 
         # Botón para cancelar
         ttk.Button(ventana_transferencia, text="Cancelar", command=ventana_transferencia.destroy).pack(pady=5)
+
+        # Centrar la ventana emergente después de agregar widgets
+        self.controller.centrar_ventana_emergente(ventana_transferencia)
 
         # Centrar ventana emergente
         ventana_transferencia.transient(self)
