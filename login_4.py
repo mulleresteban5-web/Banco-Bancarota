@@ -319,7 +319,7 @@ class LoginFrame(tk.Frame):
                 return
 
             # Validar nombre completo
-            if len(nombre_completo.split()) < 2:
+            if len(nombre_completo.split()) < 2: # Separa el texto del nombre cada vez que encuentra un espacio.
                 messagebox.showerror("Error", "El nombre debe incluir nombre y apellido, separados por espacio")
                 return
             
@@ -374,7 +374,7 @@ class LoginFrame(tk.Frame):
             
             # Crear entrada vacía en cuentas.json para el nuevo usuario (usando nombre_completo como clave)
             try:
-                with open("cuentas.json", 'r') as archivo:
+                with open("cuentas.json", 'r') as archivo: # Para leer los usuarios que ya están guardados en el JSON antes de registrar uno nuevo.
                     cuentas_globales = js.load(archivo)
                     if not isinstance(cuentas_globales, dict):
                         cuentas_globales = {}
