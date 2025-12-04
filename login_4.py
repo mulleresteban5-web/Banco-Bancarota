@@ -1139,7 +1139,7 @@ class NotebookFrame(tk.Frame):
         # Botón para cancelar
         ttk.Button(ventana_crear, text="Cancelar", command=ventana_crear.destroy).pack(pady=10)
 
-        # <-- AGREGADO: Centrar la ventana emergente después de agregar widgets
+        # Centrar la ventana emergente después de agregar widgets
         self.controller.centrar_ventana_emergente(ventana_crear)
     
         # Centrar la ventana emergente
