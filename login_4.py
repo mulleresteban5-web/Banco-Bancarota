@@ -1056,10 +1056,10 @@ class NotebookFrame(tk.Frame):
         ventana_popup.grab_set()
         self.wait_window(ventana_popup)
     
-    def crear_cuenta(self):
+    def crear_cuenta(self): #se crea una clase dentro de la principal
         """Método para crear una nueva cuenta bancaria"""
         # Crear una ventana emergente para ingresar datos de la nueva cuenta
-        ventana_crear = tk.Toplevel(self)
+        ventana_crear = tk.Toplevel(self) #se crea una ventana emergente con el toplavel
         ventana_crear.title("Crear Nueva Cuenta")
         ventana_crear.geometry("400x300")
         ventana_crear.configure(bg="#b5ddd8")
@@ -1076,28 +1076,28 @@ class NotebookFrame(tk.Frame):
             tipo_seleccionado = tipo_var.get()
 
             # Verificar si ya existe una cuenta del mismo tipo
-            for cuenta in self.cuentas_data:
-                if cuenta["tipo"] == tipo_seleccionado:
+            for cuenta in self.cuentas_data: 
+                if cuenta["tipo"] == tipo_seleccionado: #si alguna de las cuentas q el usuario tiene es igual a la seleccionada sale el mensagebox
                     messagebox.showerror("Error", f"Ya tienes una cuenta de tipo '{tipo_seleccionado}'. No puedes crear otra del mismo tipo.")
                     return
             
             # Obtener el RUT del usuario actual desde usuarios_cuentas.json
-            usuario_actual = self.controller.usuario_actual
-            rut_usuario = None
+            usuario_actual = self.controller.usuario_actual 
+            rut_usuario = None# se le asigna un valor nulo para iniciar la variable antes de que se busque por el json
             try:
-                with open("usuarios_cuentas.json", 'r') as archivo:
-                    datos_usuarios = js.load(archivo)
-                    if not isinstance(datos_usuarios, list):
-                        datos_usuarios = []
+                with open("usuarios_cuentas.json", 'r') as archivo:#se abre el archivo json en modo lectura
+                    datos_usuarios = js.load(archivo)#convierte el json en una estructura de datos de python
+                    if not isinstance(datos_usuarios, list): 
+                        datos_usuarios = [] # al no ser una lista se le asigna un dato vacio
                 for usuario in datos_usuarios:
-                    if usuario['nombre_completo'] == usuario_actual:
+                    if usuario['nombre_completo'] == usuario_actual: 
                         rut_usuario = usuario['rut']
                         break
-            except (FileNotFoundError, js.JSONDecodeError):
+            except (FileNotFoundError, js.JSONDecodeError): #archivo no encontrado o no formato de json
                 messagebox.showerror("Error", "No se pudo acceder a los datos del usuario.")
                 return
         
-            if not rut_usuario:
+            if not rut_usuario: #verifica si el usuario sigue siendo none(no se encontro usuario)
                 messagebox.showerror("Error", "RUT del usuario no encontrado.")
                 return
         
@@ -1144,15 +1144,15 @@ class NotebookFrame(tk.Frame):
         self.controller.centrar_ventana_emergente(ventana_crear)
     
         # Centrar la ventana emergente
-        ventana_crear.transient(self)
+        ventana_crear.transient(self)#ventana transitoria
         ventana_crear.grab_set()
-        self.wait_window(ventana_crear)
+        self.wait_window(ventana_crear) #Pausa la ejecución del código en la ventana padre hasta que se cierre la ventana secundaria
 
     def actualizar_treeview(self):
         """Actualiza el treeview con los datos actuales de cuentas"""
         # Limpiar treeview
-        for item in self.tree2.get_children():
-            self.tree2.delete(item)
+        for item in self.tree2.get_children(): # Para cada elemento obtenido, lo elimina del treeview
+            self.tree2.delete(item) #elimina el dato especifico del treeview
         
         # Insertar datos actualizados
         for cuenta in self.cuentas_data:
