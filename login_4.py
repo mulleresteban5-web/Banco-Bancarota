@@ -3,7 +3,7 @@ from tkinter import messagebox, ttk
 import json as js
 import re  # Agregar esta importación para usar expresiones regulares
 import random  # Agregar esta importación para generar números de cuenta aleatorios
-from datetime import datetime  # <-- AGREGAR ESTA LÍNEA PARA USAR datetime
+from datetime import datetime  # Para la hora del préstamo
 
 class Aplicacion(tk.Tk):
     def __init__(self):
@@ -82,7 +82,6 @@ class LoginFrame(tk.Frame):
     
     def crear_widgets(self):
         # Cargar la imagen del logo usando tk.PhotoImage
-        # Reemplaza "logo.png" con la ruta a tu imagen si es diferente
         try:
             self.logo_image = tk.PhotoImage(file="logoBBR(3).png")
         except tk.TclError:
@@ -134,7 +133,7 @@ class LoginFrame(tk.Frame):
     
     def verificar_login(self):
         """Función para verificar el login y manejar los datos"""
-        nombre_completo = self.cuadro_texto_entrada_nombre.get().strip()  # Cambiado de 'nombre' a 'nombre_completo'
+        nombre_completo = self.cuadro_texto_entrada_nombre.get().strip()
         contraseña = self.cuadro_texto_entrada_contraseña.get().strip()
 
         # Validar que se ingresaron ambos campos
@@ -614,7 +613,7 @@ class NotebookFrame(tk.Frame):
         pestana3 = ttk.Frame(self.notebook)
         self.notebook.add(pestana3, text="Ayuda")
     
-        ttk.Label(pestana3, text="Centro de Ayuda - Modo Cliente", font=('Arial', 14, 'bold')).pack(pady=20)
+        ttk.Label(pestana3, text="Centro de Ayuda", font=('Arial', 14, 'bold')).pack(pady=20)
         ttk.Label(pestana3, text=f"Bienvenido Cliente: {self.controller.usuario_actual}").pack(pady=10)
         ttk.Button(pestana3, text="Soporte al Cliente").pack(pady=10)
         ttk.Button(pestana3, text="Preguntas Frecuentes").pack(pady=10)
@@ -649,7 +648,7 @@ class NotebookFrame(tk.Frame):
         # Crear ventana emergente para pedir préstamo
         ventana_prestamo = tk.Toplevel(self)
         ventana_prestamo.title("Pedir Préstamo")
-        ventana_prestamo.geometry("400x300")
+        ventana_prestamo.geometry("450x350")
         ventana_prestamo.configure(bg="#b5ddd8")
 
         # Mostrar límite disponible
@@ -724,12 +723,21 @@ class NotebookFrame(tk.Frame):
             })
             
             # Ocultar elementos anteriores y mostrar campo de contraseña
+            etiqueta_limite.pack_forget()
             etiqueta_monto.pack_forget()
             entrada_monto.pack_forget()
             etiqueta_cuenta.pack_forget()
             menu_cuenta.pack_forget()
             etiqueta_contraseña.pack(pady=10)
             entrada_contraseña.pack(pady=5)
+
+            # "Olvidar" (ocultar) los botones para reordenarlos
+            boton_confirmar.pack_forget()
+            boton_cancelar.pack_forget()
+            
+            # Re-empaquetar los botones debajo del campo de contraseña
+            boton_confirmar.pack(pady=20)
+            boton_cancelar.pack(pady=5)
             
             # Cambiar el botón a "Validar Contraseña"
             boton_confirmar.config(text="Validar Contraseña", command=validar_contraseña)
@@ -858,7 +866,8 @@ class NotebookFrame(tk.Frame):
         boton_confirmar.pack(pady=20)
 
         # Botón para cancelar
-        ttk.Button(ventana_prestamo, text="Cancelar", command=ventana_prestamo.destroy).pack(pady=5)
+        boton_cancelar = ttk.Button(ventana_prestamo, text="Cancelar", command=ventana_prestamo.destroy)  # Asignar a variable
+        boton_cancelar.pack(pady=5)  # Usar la variable para pack()
 
         # Centrar la ventana emergente después de agregar widgets
         self.controller.centrar_ventana_emergente(ventana_prestamo)
