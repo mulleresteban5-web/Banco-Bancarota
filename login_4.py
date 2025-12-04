@@ -318,9 +318,10 @@ class LoginFrame(tk.Frame):
                 messagebox.showerror("Error", "Por favor ingresa nombre y apellido, RUT y contraseña")
                 return
 
-            # Validar nombre completo
-            if len(nombre_completo.split()) < 2: # Separa el texto del nombre cada vez que encuentra un espacio.
-                messagebox.showerror("Error", "El nombre debe incluir nombre y apellido, separados por espacio")
+            # Validar nombre completo: exactamente dos palabras separadas por un solo espacio
+            partes = nombre_completo.split()
+            if len(partes) != 2 or '  ' in nombre_completo or nombre_completo.startswith(' ') or nombre_completo.endswith(' '):
+                messagebox.showerror("Error", "El nombre debe incluir exactamente nombre y apellido, separados por un solo espacio (sin espacios extra)")
                 return
             
             # Validar que el nombre completo no contenga caracteres especiales (solo letras y espacios)
@@ -903,7 +904,7 @@ class NotebookFrame(tk.Frame):
         # Crear ventana emergente para pagar préstamo
         ventana_pagar = tk.Toplevel(self)
         ventana_pagar.title("Pagar Préstamo")
-        ventana_pagar.geometry("500x400")
+        ventana_pagar.geometry("800x600")
         ventana_pagar.configure(bg="#b5ddd8")
         
         ttk.Label(ventana_pagar, text="Selecciona un préstamo para pagar:", font=('Arial', 12, 'bold')).pack(pady=10)
@@ -1286,7 +1287,7 @@ class NotebookFrame(tk.Frame):
         ttk.Button(ventana_destino, text="Confirmar", command=confirmar).pack(pady=10)
         ttk.Button(ventana_destino, text="Cancelar", command=ventana_destino.destroy).pack(pady=5)
 
-        # <-- AGREGADO: Centrar la ventana emergente después de agregar widgets
+        # Centrar la ventana emergente después de agregar widgets
         self.controller.centrar_ventana_emergente(ventana_destino)
     
         # Centrar y esperar
