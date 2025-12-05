@@ -1460,7 +1460,27 @@ class NotebookFrame(tk.Frame):
                         datos_cuentas = {}
             except (FileNotFoundError, js.JSONDecodeError):
                 datos_cuentas = {}
-            cuentas_destino = datos_cuentas.get(destinatario, [])
+
+            # Se definen las cuentas predefinidas
+            cuentas_por_defecto = {
+                "Juan Martínez": [
+                    {"id": "1", "tipo": "Cuenta Vista", "numero": "111111111", "saldo": "$10.000"},
+                    {"id": "2", "tipo": "Cuenta de Ahorros", "numero": "111111111", "saldo": "$50.000"}
+                ],
+                "Ana López": [
+                    {"id": "1", "tipo": "Cuenta Corriente", "numero": "222222222", "saldo": "$25.000"},
+                    {"id": "2", "tipo": "Cuenta Rut", "numero": "222222222", "saldo": "$5.000"},
+                    {"id": "3", "tipo": "Cuenta de Ahorros", "numero": "222222222", "saldo": "$100.000"}
+                ],
+                "Pedro García": [
+                    {"id": "1", "tipo": "Cuenta Vista", "numero": "333333333", "saldo": "$15.000"},
+                    {"id": "2", "tipo": "Cuenta Corriente", "numero": "333333333", "saldo": "$75.000"},
+                    {"id": "3", "tipo": "Cuenta Rut", "numero": "333333333", "saldo": "$20.000"},
+                    {"id": "4", "tipo": "Cuenta de Ahorros", "numero": "333333333", "saldo": "$200.000"}
+                ]
+            }
+            # Usar cuentas del archivo o por defecto si no existen
+            cuentas_destino = datos_cuentas.get(destinatario, cuentas_por_defecto.get(destinatario, []))
             if not cuentas_destino:
                 messagebox.showerror("Error", "El destinatario no tiene cuentas disponibles.")
                 return
@@ -1525,10 +1545,19 @@ class NotebookFrame(tk.Frame):
             combobox_tipo.pack_forget()
             etiqueta_destinatario.pack_forget()  #Ocultar etiqueta de destinatario
             entrada_destinatario.pack_forget()
+            etiqueta_rut.pack_forget()  # Ocultar etiqueta de RUT
+            entrada_rut.pack_forget()  # Ocultar entrada de RUT
             etiqueta_monto.pack_forget()  #Ocultar etiqueta de monto
             entrada_monto.pack_forget()
             etiqueta_contraseña.pack(pady=10)
             entrada_contraseña.pack(pady=5)
+
+            # "Olvidar" (ocultar) los botones para reordenarlos
+            boton_confirmar.pack_forget()
+            boton_cancelar.pack_forget()
+            # Re-empaquetar los botones debajo del campo de contraseña
+            boton_confirmar.pack(pady=20)
+            boton_cancelar.pack(pady=5)
 
             # Botón "Validar Contraseña"
             boton_confirmar.config(text="Validar Contraseña", command=validar_contraseña)
@@ -1608,7 +1637,8 @@ class NotebookFrame(tk.Frame):
         boton_confirmar.pack(pady=20)
 
         # Botón para cancelar
-        ttk.Button(ventana_transferencia, text="Cancelar", command=ventana_transferencia.destroy).pack(pady=5)
+        boton_cancelar = ttk.Button(ventana_transferencia, text="Cancelar", command=ventana_transferencia.destroy)
+        boton_cancelar.pack(pady=5)
 
         # Centrar la ventana emergente después de agregar widgets
         self.controller.centrar_ventana_emergente(ventana_transferencia)
