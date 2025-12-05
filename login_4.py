@@ -172,7 +172,7 @@ class LoginFrame(tk.Frame):
                 self.guardar_usuario(nombre_completo, "11111111-1", contraseña, tipo)
 
                 # Limpiar el mensaje de bienvenido antes de cambiar al notebook
-                self.texto.config(text="")  # <-- LÍNEA NUEVA: Borra el mensaje
+                self.texto.config(text="")  # Borra el mensaje
             
                 # Mostrar notebook
                 self.controller.mostrar_frame("NotebookFrame")
@@ -286,7 +286,7 @@ class LoginFrame(tk.Frame):
                 self.texto.config(text="")
                 return
     def registrar_usuario(self):
-        """Función para registrar un nuevo usuario"""
+        """Función para registrar un nuevo usuario""" #Jeremías inicio
         # Crear ventana emergente para registro
         ventana_registro = tk.Toplevel(self)
         ventana_registro.title("Registro de Usuario")
@@ -325,15 +325,53 @@ class LoginFrame(tk.Frame):
                 return
             
             # Validar que el nombre completo no contenga caracteres especiales (solo letras y espacios)
-            if not re.match(r'^[a-zA-Z\s]+$', nombre_completo):  # <-- CAMBIO: Ahora permite espacios (\s)
-               messagebox.showerror("Error", "El nombre solo puede contener letras y espacios, sin números ni caracteres especiales")  # <-- CAMBIO: Mensaje actualizado
+            if not re.match(r'^[a-zA-Z\s]+$', nombre_completo):
+               messagebox.showerror("Error", "El nombre solo puede contener letras y espacios, sin números ni caracteres especiales")  # Mensaje actualizado
                return
-            
-            # Validar RUT (formato básico: dígitos-guion-dígito)
-            if not re.match(r'^\d{7,8}-[\dKk]$', rut):
-                messagebox.showerror("Error", "RUT inválido. Formato: 12345678-9 o 1234567-K")
+
+            # Validar RUT con formato y algoritmo del módulo 11
+            partes = rut.split('-')
+            if len(partes) != 2:
+                messagebox.showerror("Error", "RUT inválido. Debe incluir guión.")
                 return
-            
+            numero = partes[0]
+            dv_proporcionado = partes[1].upper()  # Convertir a mayúscula para 'K'
+
+            # Verificar que el número sea solo dígitos y tenga 7 u 8 caracteres
+            if not numero.isdigit() or len(numero) < 7 or len(numero) > 8:
+                messagebox.showerror("Error", "RUT inválido. El número debe tener 7 u 8 dígitos antes del verificador.")
+                return
+
+            # Invertir el número
+            numero_invertido = numero[::-1]
+
+            # Pesos: 2, 3, 4, 5, 6, 7, 2, 3, ... (tantos como dígitos)
+            pesos = [2, 3, 4, 5, 6, 7]
+            while len(pesos) < len(numero_invertido):
+                pesos.extend([2, 3, 4, 5, 6, 7])
+            pesos = pesos[:len(numero_invertido)]
+
+            # Calcular la suma
+            suma = 0
+            for i, digito in enumerate(numero_invertido):
+                suma += int(digito) * pesos[i]
+
+            # Calcular el resto
+            resto = suma % 11
+
+            # Calcular el DV esperado
+            if resto == 0:
+                dv_calculado = '0'
+            elif resto == 1:
+                dv_calculado = 'K'
+            else:
+                dv_calculado = str(11 - resto)
+
+            # Comparar con el DV proporcionado
+            if dv_calculado != dv_proporcionado:
+                messagebox.showerror("Error", "RUT inválido. El dígito verificador no coincide.")
+                return
+
             #Validar contraseña
             if not re.match(r'^[a-zA-Z0-9]+$', contraseña):
                 messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
@@ -352,7 +390,7 @@ class LoginFrame(tk.Frame):
                 if usuario['rut'] == rut:
                     messagebox.showerror("Error", "El RUT ya está registrado.")
                     return
-                if usuario['contraseña'] == contraseña:  # <-- NUEVO: Verificar unicidad de contraseña
+                if usuario['contraseña'] == contraseña:  # Verificar unicidad de contraseña
                     messagebox.showerror("Error", "La contraseña ya está en uso por otro usuario. Elige una contraseña diferente.")
                     return    
             # Verificar contra usuarios predefinidos (actualizado con apellidos y RUT)
@@ -424,7 +462,7 @@ class LoginFrame(tk.Frame):
         self.cuadro_texto_entrada_contraseña.delete(0, tk.END)
     
         # Mostrar mensaje y cambiar al notebook
-        self.controller.mostrar_frame("NotebookFrame")
+        self.controller.mostrar_frame("NotebookFrame") #Jeremias final
 
 class NotebookFrame(tk.Frame):
     def __init__(self, parent, controller):
@@ -1103,7 +1141,7 @@ class NotebookFrame(tk.Frame):
         
             # Generar número de cuenta: si es "Cuenta Rut", usar el RUT sin guión; de lo contrario, aleatorio
             if tipo_seleccionado == "Cuenta Rut":
-                numero_cuenta = rut_usuario.replace("-", "")  # Usar RUT sin guión como número de cuenta
+                numero_cuenta = rut_usuario.replace("-", "")
             else:
                 numero_cuenta = str(random.randint(100000000, 999999999))
                 # Verificar que el número no exista ya para este usuario
