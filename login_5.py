@@ -415,7 +415,7 @@ class LoginFrame(tk.Frame):
             ]
             for pred in usuarios_predefinidos: # pred es la variable del for que representa cada usuario predefinido mientras se recorre la lista usuarios_predefinidos.
                 if pred['nombre_completo'] == nombre_completo or pred['rut'] == rut:
-                    messagebox.showerror("Error", "El ususario ya existe. Elige otro.")
+                    messagebox.showerror("Error", "El usuario ya existe. Elige otro.")
                     return
             
             # Guardar nuevo usuario (actualizado con 'nombre_completo' y 'rut')
