@@ -288,7 +288,7 @@ class LoginFrame(tk.Frame):
     def registrar_usuario(self):
         """Función para registrar un nuevo usuario""" #Jeremías inicio
         # Crear ventana emergente para registro
-        ventana_registro = tk.Toplevel(self)
+        ventana_registro = tk.Toplevel(self) # crea una ventana nueva aparte de la principal
         ventana_registro.title("Registro de Usuario")
         ventana_registro.geometry("400x350")
         ventana_registro.configure(bg="#b5ddd8")
@@ -296,7 +296,7 @@ class LoginFrame(tk.Frame):
         # Etiqueta y campo para nombre y apellido (cambiado de "Nombre de usuario:")
         ttk.Label(ventana_registro, text="Nombre y Apellido:", font=('Arial', 14, 'bold')).pack(pady=10)
         entrada_nombre = ttk.Entry(ventana_registro, width=20, font=('Arial', 12))
-        entrada_nombre.pack(pady=5)
+        entrada_nombre.pack(pady=5) # el pady agrega pixeles de espacio arriba y abajo 
 
         # Etiqueta y campo para RUT (nuevo campo)
         ttk.Label(ventana_registro, text="RUT (ej: 12345678-9):", font=('Arial', 14, 'bold')).pack(pady=10)
@@ -311,7 +311,7 @@ class LoginFrame(tk.Frame):
         def confirmar_registro():
             nombre_completo = entrada_nombre.get().strip()  # Cambiado de 'nombre'
             rut = entrada_rut.get().strip()  # Nuevo
-            contraseña = entrada_contraseña.get().strip()
+            contraseña = entrada_contraseña.get().strip() # el get().strip() obtiene lo que escribo el usuario y le quita los espacios al principio y al final
             
             # Validar campos
             if not nombre_completo or not rut or not contraseña:
@@ -320,7 +320,7 @@ class LoginFrame(tk.Frame):
 
             # Validar nombre completo: exactamente dos palabras separadas por un solo espacio
             partes = nombre_completo.split()
-            if len(partes) != 2 or '  ' in nombre_completo or nombre_completo.startswith(' ') or nombre_completo.endswith(' '):
+            if len(partes) != 2 or '  ' in nombre_completo or nombre_completo.startswith(' ') or nombre_completo.endswith(' '): # Valida que el nombre tenga exactamente dos palabras y no tenga espacios dobles ni espacios al inicio o al final.
                 messagebox.showerror("Error", "El nombre debe incluir exactamente nombre y apellido, separados por un solo espacio (sin espacios extra)")
                 return
             
@@ -380,9 +380,9 @@ class LoginFrame(tk.Frame):
             # Verificar unicidad de nombre_completo y RUT (actualizado)
             try:
                 with open("usuarios_cuentas.json", 'r') as archivo:
-                    datos = js.load(archivo)
-                    if not isinstance(datos, list):
-                        datos = []
+                    datos = js.load(archivo) # Carga el contenido del archivo JSON y lo convierte en una estructura de Python
+                    if not isinstance(datos, list): # Verifica si la variable es del tipo indicado (por ejemplo, si 'datos' es una lista).
+                        datos = [] # Crea una lista vacía para iniciar o reiniciar la estructura donde se guardarán los usuarios.
             except (FileNotFoundError, js.JSONDecodeError):
                 datos = []
         
@@ -400,7 +400,7 @@ class LoginFrame(tk.Frame):
                 {"nombre_completo": "Pedro García", "rut": "33333333-3"},
                 {"nombre_completo": "Juan Martínez", "rut": "44444444-4"}
             ]
-            for pred in usuarios_predefinidos:
+            for pred in usuarios_predefinidos: # pred es la variable del for que representa cada usuario predefinido mientras se recorre la lista usuarios_predefinidos.
                 if pred['nombre_completo'] == nombre_completo or pred['rut'] == rut:
                     messagebox.showerror("Error", "El ususario ya existe. Elige otro.")
                     return
@@ -421,7 +421,7 @@ class LoginFrame(tk.Frame):
                 cuentas_globales = {}
             
             cuentas_globales[nombre_completo] = []  # Lista vacía de cuentas
-            with open("cuentas.json", 'w') as archivo:
+            with open("cuentas.json", 'w') as archivo: # Guarda los datos en un archivo convirtiéndolos al formato JSON.
                 js.dump(cuentas_globales, archivo)
 
             messagebox.showinfo("Éxito", f"Usuario {nombre_completo} registrado exitosamente. Ahora puedes iniciar sesión.")
