@@ -83,9 +83,9 @@ class Aplicacion(tk.Tk):
 
         # Inicializar sucursales.json con sucursales predefinidas (sin teléfono ni gerente)
         sucursales_predefinidas = [
-            {"nombre": "Osorno", "direccion": "Dirección de Osorno", "clientes": []},
-            {"nombre": "Valdivia", "direccion": "Dirección de Valdivia", "clientes": []},
-            {"nombre": "Temuco", "direccion": "Dirección de Temuco", "clientes": []}
+            {"nombre": "Osorno", "direccion": "Portales #215", "clientes": []},
+            {"nombre": "Valdivia", "direccion": "Ramón Picarte #520", "clientes": []},
+            {"nombre": "Temuco", "direccion": "Alemania #2285", "clientes": []}
         ]
 
         try:
@@ -104,7 +104,39 @@ class Aplicacion(tk.Tk):
         with open("sucursales.json", 'w') as archivo:
             js.dump(datos_sucursales, archivo)
 
-    
+        # Inicializar cuentas.json con cuentas por defecto para usuarios predefinidos (NUEVO)
+        cuentas_por_defecto = {
+            "Juan Martínez": [
+                {"id": "1", "tipo": "Cuenta Vista", "numero": "111111111", "saldo": "$10.000"},
+                {"id": "2", "tipo": "Cuenta de Ahorros", "numero": "111111111", "saldo": "$50.000"}
+            ],
+            "Ana López": [
+                {"id": "1", "tipo": "Cuenta Corriente", "numero": "222222222", "saldo": "$25.000"},
+                {"id": "2", "tipo": "Cuenta Rut", "numero": "222222222", "saldo": "$5.000"},
+                {"id": "3", "tipo": "Cuenta de Ahorros", "numero": "222222222", "saldo": "$100.000"}
+            ],
+            "Pedro García": [
+                {"id": "1", "tipo": "Cuenta Vista", "numero": "333333333", "saldo": "$15.000"},
+                {"id": "2", "tipo": "Cuenta Corriente", "numero": "333333333", "saldo": "$75.000"},
+                {"id": "3", "tipo": "Cuenta Rut", "numero": "333333333", "saldo": "$20.000"},
+                {"id": "4", "tipo": "Cuenta de Ahorros", "numero": "333333333", "saldo": "$200.000"}
+            ]
+        }
+        try:
+            with open("cuentas.json", 'r') as archivo:
+                cuentas_globales = js.load(archivo)
+                if not isinstance(cuentas_globales, dict):
+                    cuentas_globales = {}
+        except (FileNotFoundError, js.JSONDecodeError):
+            cuentas_globales = {}
+
+        # Agregar cuentas por defecto para predefinidos si no existen
+        for nombre, cuentas in cuentas_por_defecto.items():
+            if nombre not in cuentas_globales:
+                cuentas_globales[nombre] = cuentas
+        with open("cuentas.json", 'w') as archivo:
+            js.dump(cuentas_globales, archivo)
+
     def mostrar_frame(self, nombre_pagina):
         """Muestra un frame específico"""
         # Si es el notebook y no está creado, crearlo según el tipo de usuario
@@ -140,6 +172,50 @@ class Aplicacion(tk.Tk):
         x = (ventana.winfo_screenwidth() // 2) - (ancho // 2)
         y = (ventana.winfo_screenheight() // 2) - (alto // 2)
         ventana.geometry(f'{ancho}x{alto}+{x}+{y}')
+
+    def es_rut_regular(self, rut):
+        """Valida si un RUT es regular: formato, módulo 11, y no singular/falso"""
+        # 1. Validar formato básico
+        if not re.match(r'^\d{7,8}-[\dKk]$', rut):
+            return False, "Formato inválido. Debe ser 12345678-9 o 1234567-K."
+        
+        # 2. Validar módulo 11
+        rut_sin_guion = rut.replace("-", "")
+        cuerpo = rut_sin_guion[:-1]
+        dv = rut_sin_guion[-1].upper()
+        
+        suma = 0
+        multiplicador = 2
+        for d in reversed(cuerpo):
+            suma += int(d) * multiplicador
+            multiplicador = multiplicador + 1 if multiplicador < 7 else 2
+        
+        resto = suma % 11
+        dv_calculado = str(11 - resto) if resto != 0 else "0"
+        if dv == "K":
+            dv_calculado = "K"
+        
+        if dv != dv_calculado:
+            return False, "RUT inválido."
+        
+        # 3. Checks adicionales para "regularidad" (excluir singulares/falsos)
+        digitos = cuerpo  # Solo el cuerpo sin DV
+        
+        # a. No todos los dígitos iguales
+        if len(set(digitos)) == 1:
+            return False, "RUT no válido: todos los dígitos son iguales."
+        
+        # b. No secuencia repetida o patrón obvio (ej: 12345678, 98765432, etc.)
+        # Verificar si es una secuencia ascendente/descendente simple
+        if digitos in ["12345678", "1234567", "87654321", "98765432", "9876543", "01234567", "76543210"]:
+            return False, "RUT no válido: secuencia repetida o patrón obvio."
+        
+        # c. Excluir RUTs específicos conocidos como de prueba
+        ruts_excluidos = ["55555555", "11111111", "22222222", "33333333", "44444444", "66666666", "77777777", "88888888", "99999999"]
+        if cuerpo in ruts_excluidos:
+            return False, "RUT no válido: RUT de prueba o excluido."
+        
+        return True, "RUT válido."
 
 class LoginFrame(tk.Frame):
     def __init__(self, parent, controller):
@@ -381,7 +457,7 @@ class LoginFrame(tk.Frame):
                 self.controller.usuario_actual = nombre_completo_usuario  # Setear nombre completo
                 self.controller.tipo_usuario = "cliente"
                 
-                # NUEVO: Verificar bloqueo antes de proceder
+                # Verificar bloqueo antes de proceder
                 usuario_bloqueado = None
                 for u in datos:
                     if u['rut'] == rut_usuario:
@@ -408,7 +484,7 @@ class LoginFrame(tk.Frame):
         # Crear ventana emergente para registro
         ventana_registro = tk.Toplevel(self)
         ventana_registro.title("Registro de Usuario")
-        ventana_registro.geometry("400x450")  # Aumenté la altura para el nuevo campo
+        ventana_registro.geometry("400x450")
         ventana_registro.configure(bg="#b5ddd8")
         
         # Etiqueta y campo para nombre y apellido
@@ -456,6 +532,28 @@ class LoginFrame(tk.Frame):
             if not nombre_completo or not rut or not contraseña or not sucursal:
                 messagebox.showerror("Error", "Por favor ingresa nombre y apellido, RUT, contraseña y sucursal")
                 return
+            
+            # Validar nombre completo: exactamente dos palabras separadas por un solo espacio
+            partes = nombre_completo.split()
+            if len(partes) != 2 or '  ' in nombre_completo or nombre_completo.startswith(' ') or nombre_completo.endswith(' '): # Valida que el nombre tenga exactamente dos palabras y no tenga espacios dobles ni espacios al inicio o al final.
+                messagebox.showerror("Error", "El nombre debe incluir exactamente nombre y apellido, separados por un solo espacio (sin espacios extra)")
+                return
+            
+            # Validar que el nombre completo no contenga caracteres especiales (solo letras y espacios)
+            if not re.match(r'^[a-zA-Z\s]+$', nombre_completo): # Revisa si solo contiene letras y espacios desde el inicio hasta el final.
+               messagebox.showerror("Error", "El nombre solo puede contener letras y espacios, sin números ni caracteres especiales")  # Mensaje actualizado
+               return
+            
+            # Usar es_rut_regular para validar formato, módulo 11 y regularidad
+            valido, mensaje = self.controller.es_rut_regular(rut)
+            if not valido:
+                messagebox.showerror("Error", mensaje)
+                return
+            
+            #Validar contraseña
+            if not re.match(r'^[a-zA-Z0-9]+$', contraseña):
+                messagebox.showerror("Error", "La contraseña solo puede contener letras y números, sin espacios ni caracteres especiales")
+                return
 
             # Verificar unicidad de nombre_completo y RUT (actualizado)
             try:
@@ -489,7 +587,7 @@ class LoginFrame(tk.Frame):
             # Guardar nuevo usuario con sucursal
             diccionario_a_guardar = {
                 'nombre_completo': nombre_completo, 
-                'rut': rut, 
+                'rut': rut,
                 'contraseña': contraseña, 
                 'tipo': 'cliente', 
                 'sucursal': sucursal  # Nuevo campo
@@ -707,14 +805,6 @@ class NotebookFrame(tk.Frame):
                command=self.bloquear_cliente).pack(side=tk.LEFT, padx=5)
         ttk.Button(frame_acciones, text="Eliminar Cuenta", 
                command=self.eliminar_cliente).pack(side=tk.LEFT, padx=5)
-
-        # Pestaña 3 - Reportes
-        pestana3 = ttk.Frame(self.notebook)
-        self.notebook.add(pestana3, text="Reportes")
-        
-        ttk.Label(pestana3, text="Reportes del Sistema", font=('Arial', 14, 'bold')).pack(pady=20)
-        ttk.Button(pestana3, text="Generar Reporte Mensual").pack(pady=10)
-        ttk.Button(pestana3, text="Estadísticas").pack(pady=10)
         
         # Pestaña 4 - Cuentas Eliminadas
         pestana4 = ttk.Frame(self.notebook)
@@ -752,13 +842,6 @@ class NotebookFrame(tk.Frame):
                command=self.restaurar_cuenta_eliminada).pack(side=tk.LEFT, padx=5)
         ttk.Button(frame_papelera, text="Vaciar Papelera", 
                command=self.vaciar_papelera).pack(side=tk.LEFT, padx=5)
-        
-        # Pestaña 5 - Ayuda
-        pestana5 = ttk.Frame(self.notebook)
-        self.notebook.add(pestana5, text="Ayuda")
-        
-        ttk.Label(pestana5, text="Sistema de Ayuda - Modo Gerente", font=('Arial', 14, 'bold')).pack(pady=20)
-        ttk.Label(pestana5, text=f"Bienvenido: {self.controller.usuario_actual}").pack(pady=10)
 
         # Mostrar sucursales de inmediato
         self.cargar_sucursales()
@@ -889,8 +972,16 @@ class NotebookFrame(tk.Frame):
         ttk.Label(ventana_limite, text=f"Cliente: {nombre}", font=('Arial', 12, 'bold')).pack(pady=10)
         
         # Mostrar límite actual
-        limite_actual = usuario_encontrado.get('limite_prestamo', 0)
-        limite_formateado = f"${limite_actual:,.0f}".replace(',', '.')
+        # Cargar límite desde limites_prestamos.json en lugar de usuario_encontrado
+        try:
+            with open("limites_prestamos.json", 'r') as archivo:
+                limites = js.load(archivo)
+                if not isinstance(limites, dict):
+                    limites = {}
+        except (FileNotFoundError, js.JSONDecodeError):
+            limites = {}
+        limite_actual = limites.get(rut, {}).get("limite_prestamo", 500000)  # Valor por defecto 500.000 si no existe
+        limite_formateado = f"${limite_actual:,.0f}".replace(',', '.')  # Usar punto como separador
         ttk.Label(ventana_limite, text=f"Límite Actual: {limite_formateado}", font=('Arial', 11)).pack(pady=5)
         
         # Frame para nuevo límite
@@ -1313,23 +1404,30 @@ class NotebookFrame(tk.Frame):
         
         ttk.Label(ventana_asignar, text=f"Asignar cliente a: {sucursal_seleccionada}", font=('Arial', 12, 'bold')).pack(pady=10)
         
-        # Cargar clientes disponibles
+        # Cargar clientes disponibles (solo aquellos que NO pertenecen a la sucursal seleccionada)
         try:
             with open("usuarios_cuentas.json", 'r') as archivo:
                 datos_usuarios = js.load(archivo)
         except (FileNotFoundError, js.JSONDecodeError):
             messagebox.showerror("Error", "No se pudo cargar el archivo de usuarios")
             return
-
-        clientes = [u for u in datos_usuarios if u.get('tipo') == 'cliente']
+        # Filtrar clientes: solo tipo 'cliente' y que NO estén en la sucursal seleccionada
+        clientes_disponibles = [
+            u for u in datos_usuarios 
+            if u.get('tipo') == 'cliente' and u.get('sucursal') != sucursal_seleccionada
+        ]
+        if not clientes_disponibles:
+            messagebox.showinfo("Info", f"No hay clientes disponibles para asignar a {sucursal_seleccionada}.")
+            ventana_asignar.destroy()
+            return
 
         ttk.Label(ventana_asignar, text="Selecciona un cliente:", font=('Arial', 11, 'bold')).pack(pady=5)
-        combo_clientes = ttk.Combobox(ventana_asignar, width=40)
+        combo_clientes = ttk.Combobox(ventana_asignar, width=40, state="readonly")
 
         # Construir valores mostrando la sucursal actual de cada cliente
         # Formato estético: "Nombre (RUT) (Sucursal X)" cuando tenga sucursal
         valores = []
-        for c in clientes:
+        for c in clientes_disponibles:
             nombre = c.get('nombre_completo')
             rut = c.get('rut')
             base = f"{nombre} ({rut})"
@@ -1360,18 +1458,12 @@ class NotebookFrame(tk.Frame):
 
             # Encontrar el cliente por RUT
             cliente_encontrado = None
-            for cliente in clientes:
+            for cliente in clientes_disponibles:  # Usar la lista filtrada
                 if cliente.get('rut') == rut_seleccionado:
                     cliente_encontrado = cliente
                     break
-
             if not cliente_encontrado:
                 messagebox.showerror("Error", "Cliente no encontrado")
-                return
-
-            # Si ya pertenece a la sucursal, informar y no reasignar
-            if cliente_encontrado.get('sucursal') == sucursal_seleccionada:
-                messagebox.showinfo("Info", f"El cliente ya pertenece a {sucursal_seleccionada}")
                 return
 
             # Si pertenece a otra sucursal, pedir confirmación para mover
@@ -1636,7 +1728,7 @@ class NotebookFrame(tk.Frame):
         self.tree2.heading("saldo", text="Saldo disponible")
 
         # Ajustar anchos de columnas
-        self.tree2.column("#0", width=50)
+        self.tree2.column("#0", width=0, stretch=False)
         self.tree2.column("cuenta", width=100)
         self.tree2.column("N°cuenta", width=80)
         self.tree2.column("saldo", width=100)
@@ -1680,7 +1772,8 @@ class NotebookFrame(tk.Frame):
         # Llenar el treeview con los datos
         self.actualizar_treeview()
 
-        self.tree2.pack(pady=20, fill="both", expand=True)
+        # Empacar treeview y hacerlo visible
+        self.tree2.pack(pady=10, padx=10, fill="both", expand=True)  # Empaca el Treeview para que se muestre
     
         # Pestaña 2 - Operaciones
         pestana2 = ttk.Frame(self.notebook)
@@ -1788,6 +1881,10 @@ class NotebookFrame(tk.Frame):
         tree_historial.column("Tipo_Cuenta", width=120)
         tree_historial.column("Monto", width=100)
         tree_historial.column("Fecha", width=150)
+
+        # Configurar tags para colores (Esto es lo que faltaba)
+        tree_historial.tag_configure('enviada', foreground='red')  # Rojo para enviadas
+        tree_historial.tag_configure('recibida', foreground='green')  # Verde para recibidas
     
         # Poblar Treeview
         for trans in historial:
@@ -1795,7 +1892,11 @@ class NotebookFrame(tk.Frame):
             tipo_cuenta = trans['tipo_cuenta']
             monto = f"-${trans['monto']:,.0f}" if trans['tipo'] == 'enviada' else f"{trans['monto']:,.0f}"
             fecha = trans['fecha']
-            tree_historial.insert("", "end", values=(nombre, tipo_cuenta, monto, fecha))
+            # Insertar con tag correspondiente
+            if trans['tipo'] == 'enviada':
+                tree_historial.insert("", "end", values=(nombre, tipo_cuenta, monto, fecha), tags=('enviada',))
+            else:
+                tree_historial.insert("", "end", values=(nombre, tipo_cuenta, monto, fecha), tags=('recibida',))
     
         tree_historial.pack(fill="both", expand=True, pady=10)
     
@@ -1943,7 +2044,7 @@ class NotebookFrame(tk.Frame):
         
         # Verificar si el usuario tiene límite disponible
         if limite_actual <= 0:
-            messagebox.showerror("Error", f"No tienes límite disponible para préstamos. Límite actual: ${limite_actual:,.0f}")
+            messagebox.showerror("Error", f"Sin cupo disponible. Existe deuda pendiente")
             return
         
         # Crear ventana emergente para pedir préstamo
@@ -1959,13 +2060,26 @@ class NotebookFrame(tk.Frame):
                                     foreground="blue")
         etiqueta_limite.pack(pady=10)
         
-        # Etiqueta y campo para monto del préstamo
+        # Montos posibles
+        montos_posibles = [50000, 100000, 250000, 500000]
+        
+        # Filtrar montos <= limite_actual
+        montos_disponibles = [m for m in montos_posibles if m <= limite_actual]
+        
+        if not montos_disponibles:
+            messagebox.showerror("Error", f"No hay montos disponibles para pedir préstamo con tu límite actual (${limite_actual:,.0f}).")
+            ventana_prestamo.destroy()
+            return
+        
         etiqueta_monto = ttk.Label(ventana_prestamo, 
-                                text=f"Monto del préstamo (máximo ${limite_actual:,.0f}):",
+                                text="Selecciona el monto del préstamo:",
                                 font=('Arial', 12, 'bold'))
         etiqueta_monto.pack(pady=10)
-        entrada_monto = ttk.Entry(ventana_prestamo, width=20, font=('Arial', 12))
-        entrada_monto.pack(pady=5)
+        
+        # Combobox de solo lectura con montos filtrados
+        combo_monto = ttk.Combobox(ventana_prestamo, values=[f"${m:,.0f}".replace(',', '.') for m in montos_disponibles], state="readonly", width=15, font=('Arial', 12))  # <-- MODIFICACIÓN: Cambiar separador de mil a punto
+        combo_monto.pack(pady=5)
+        combo_monto.set("")  # Sin selección por defecto
         
         # Etiqueta y OptionMenu para seleccionar cuenta destino
         etiqueta_cuenta = ttk.Label(ventana_prestamo, text="Seleccione la cuenta para recibir el dinero:", font=('Arial', 12, 'bold'))
@@ -1985,32 +2099,29 @@ class NotebookFrame(tk.Frame):
         datos_validos = {}
         
         def confirmar_prestamo():
-            monto_str = entrada_monto.get().strip()
-            cuenta_seleccionada = cuenta_var.get()
+            monto_str = combo_monto.get()  # Obtener de Combobox
             
-            # Validar monto
+            # Validar que se haya seleccionado un monto
             if not monto_str:
-                messagebox.showerror("Error", "Ingresa un monto para el préstamo.")
+                messagebox.showerror("Error", "Selecciona un monto para el préstamo.")
                 return
+            
+            # Convertir monto seleccionado a entero (remover formato)
             try:
-                monto = int(monto_str)
-                if monto < 1:
-                    messagebox.showerror("Error", "El monto mínimo es 1")
-                    return
-                if monto > limite_actual:
-                    messagebox.showerror("Error", 
-                                        f"El monto excede tu límite disponible.\n"
-                                        f"Monto solicitado: ${monto:,.0f}\n"
-                                        f"Límite disponible: ${limite_actual:,.0f}")
-                    return
+                monto = int(monto_str.replace('$', '').replace('.', '').replace(',', ''))
             except ValueError:
-                messagebox.showerror("Error", "El monto debe ser un número entero válido.")
+                messagebox.showerror("Error", "Monto inválido.")
+                return
+            
+            # Verificar que el monto no exceda el límite (aunque ya está filtrado, por seguridad)
+            if monto > limite_actual:
+                messagebox.showerror("Error", f"El monto excede tu límite disponible (${limite_actual:,.0f}).")
                 return
             
             # Encontrar la cuenta seleccionada
             cuenta_destino = None
             for cuenta in self.cuentas_data:
-                if f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}" == cuenta_seleccionada:
+                if f"{cuenta['tipo']} - {cuenta['numero']} - Saldo: {cuenta['saldo']}" == cuenta_var.get():
                     cuenta_destino = cuenta
                     break
             if not cuenta_destino:
@@ -2026,7 +2137,7 @@ class NotebookFrame(tk.Frame):
             # Ocultar elementos y mostrar contraseña
             etiqueta_limite.pack_forget()
             etiqueta_monto.pack_forget()
-            entrada_monto.pack_forget()
+            combo_monto.pack_forget()
             etiqueta_cuenta.pack_forget()
             menu_cuenta.pack_forget()
             etiqueta_contraseña.pack(pady=10)
@@ -2259,8 +2370,10 @@ class NotebookFrame(tk.Frame):
                     if nuevo_saldo_pendiente <= 0:
                         prestamos_activos.remove(prestamo)  # Eliminar si pagado completamente
                         print(f"Préstamo {prestamo_id} eliminado completamente.")  # Debug
-                    prestamo_actualizado = True
-                    break
+                    # Verificar si no hay deuda pendiente y reiniciar límite
+                    total_pendiente = sum(p['saldo_pendiente'] for p in prestamos_activos)
+                    if total_pendiente == 0:
+                        limites[rut_usuario]["limite_prestamo"] = 500000  # Reiniciar límite a 500,000
             
             if not prestamo_actualizado:
                 messagebox.showerror("Error", "Préstamo no encontrado para actualizar.")
@@ -2438,8 +2551,7 @@ class NotebookFrame(tk.Frame):
         
         # Insertar datos actualizados
         for cuenta in self.cuentas_data:
-            self.tree2.insert("", "end", text=cuenta["id"], 
-                            values=(cuenta["tipo"], cuenta["numero"], cuenta["saldo"]))
+            self.tree2.insert("", "end", values=(cuenta["tipo"], cuenta["numero"], cuenta["saldo"]))
 
     def mostrar_lista_cuentas(self):
         """Muestra u oculta la lista de cuentas con checkbuttons"""
@@ -2668,10 +2780,6 @@ class NotebookFrame(tk.Frame):
             # Validar que se haya seleccionado tipo
             if not tipo_destino:
                 messagebox.showerror("Error", "Selecciona un tipo de cuenta de destino.")
-                return
-            # Validar nombre de destinatario
-            if not destinatario:
-                messagebox.showerror("Error", "Ingresa el nombre del destinatario.")
                 return
             
             # Validar RUT (formato y presencia)
