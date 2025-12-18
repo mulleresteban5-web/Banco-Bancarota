@@ -244,7 +244,7 @@ class LoginFrame(tk.Frame):
         texto_rut = tk.Label(self, text='RUT de usuario: ', font=('Arial', 30, 'bold'), 
                            bg='#b5ddd8', fg='white')
         texto_rut.pack(padx=25, pady=25)
-        self.cuadro_texto_entrada_rut = tk.Entry(self, width=13, font=('Arial', 20))  # CAMBIO: Nuevo nombre de variable
+        self.cuadro_texto_entrada_rut = tk.Entry(self, width=13, font=('Arial', 20))  # Nuevo nombre de variable
         self.cuadro_texto_entrada_rut.pack(padx=25, pady=25)
         
         # Etiqueta y campo para contraseña
@@ -1005,13 +1005,15 @@ class NotebookFrame(tk.Frame):
                     messagebox.showerror("Error", "El límite debe ser un número positivo")
                     return
                 
-                # Actualizar límite en datos
-                usuario_encontrado['limite_prestamo'] = nuevo_limite
+                # Actualizar límite en limites_prestamos.json
+                if rut not in limites:
+                    limites[rut] = {"limite_prestamo": 500000, "prestamos_activos": []}
+                limites[rut]["limite_prestamo"] = nuevo_limite
                 
-                # Guardar en JSON
+                # Guardar en limites_prestamos.json
                 try:
-                    with open("usuarios_cuentas.json", 'w') as archivo:
-                        js.dump(datos_usuarios, archivo, indent=2)
+                    with open("limites_prestamos.json", 'w') as archivo:
+                        js.dump(limites, archivo, indent=2)
                     
                     nuevo_limite_formateado = f"${nuevo_limite:,.0f}".replace(',', '.')
                     messagebox.showinfo("Éxito", f"Límite actualizado a {nuevo_limite_formateado}")
@@ -3092,6 +3094,11 @@ class NotebookFrame(tk.Frame):
         boton_cancelar.pack(pady=5)
 
     def mostrar_transferencia_entre_cuentas(self, ventana, frame_seleccion):
+        # El usuario debe tener al menos 2 cuentas para transferir entre ellas
+        if len(self.cuentas_data) < 2:
+            messagebox.showerror("Error", "Debes tener al menos 2 cuentas para realizar transferencias entre ellas.")
+            return
+        
         # Ocultar frame de selección
         frame_seleccion.pack_forget()
 
